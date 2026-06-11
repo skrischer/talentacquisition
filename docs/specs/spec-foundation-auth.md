@@ -140,3 +140,7 @@ Each issue references this spec path in its body.
   specified the `signInWithOtp` → `GET /auth/confirm` callback; named the env
   vars and dropped any service-role key from this phase; made the bundle check an
   executable `.next/static` grep.
+- 2026-06-11: Scaffold (#3). Next.js 16 removed `next lint`, so the `lint` script
+  runs `eslint .` directly; the ruleset stays `eslint-config-next` and the
+  workflow command (`npm run lint`) is unchanged. `shadcn` resolved to 4.11.0
+  under the `^4.0.5` range (build green).
