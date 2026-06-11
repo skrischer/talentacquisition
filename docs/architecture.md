@@ -31,9 +31,10 @@
   - `next_step` + `follow_up_date` live as columns on the row (mirrors the
     Excel "nächster Schritt" / "Wiedervorlage am").
   - `deletion_review_date` for retention.
-- **`consent`** — talent-pool consent record: `candidate_id`, `accepted`,
-  `answered_at`, audit metadata.
-- **Enums** — derived from the Excel `Listen` sheet: source, qualification,
+- **`talent_pool_consent`** — talent-pool consent record: `candidate_id`,
+  `accepted`, `state`, `answered_at`, audit metadata.
+- **Enums** — derived from professional ATS references (see
+  `docs/specs/spec-data-model.md`), not the legacy Excel: source, qualification,
   recognition status, priority (A/B/C/D), stage, status, mobility, team status,
   hospitation result, rejection reason.
 - **KPI views** — Postgres views aggregating `candidate`: per month, by source,

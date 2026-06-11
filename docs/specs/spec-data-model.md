@@ -1,6 +1,6 @@
 # Spec: Data Model (Phase 2)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-11
 
 The migration spine: enum types, the `candidate` table with the
@@ -24,7 +24,9 @@ professional ATS reference implementations, not from the legacy Excel.
 - [ ] `candidate` stores only a `documents_path` text link to external storage —
       no document bytes in the database (principle 3).
 - [ ] A `talent_pool_consent` table records explicit consent (`accepted`,
-      `state`, `answered_at`, audit metadata), one row per candidate (principle 4).
+      `state`, `answered_at`, audit metadata) and supports at most one consent
+      row per candidate (unique FK); row population is the Phase 7 workflow
+      (principle 4).
 - [ ] Every `candidate` row carries a nullable `deletion_review_date` column for
       the Phase 7 retention job to scan (principle 5).
 - [ ] RLS is enabled on `candidate` and `talent_pool_consent`; the `authenticated`
@@ -41,7 +43,7 @@ professional ATS reference implementations, not from the legacy Excel.
   migration under `supabase/migrations/`, and a documented `supabase gen types`
   step. Phase 1 deliberately left the schema empty and set up no migration
   tooling, so it is established here.
-- The 11 enum types in **Data model design** below.
+- The 10 enum types in **Data model design** below.
 - The `candidate` table: identity/contact, the four classification enums, the
   stage/status/priority separation with `stage_order`, the rejection-reason
   check constraint, team-proposal/feedback and trial-day fields, the
@@ -153,7 +155,8 @@ Nullable; set exactly when `status = 'rejected'`.
 | `spam` | Spam / unseriös |
 | `other` | Sonstiges |
 
-`consent_state` — verbatim from OCA `privacy_consent` `state`.
+`consent_state` — mirrors the OCA `privacy_consent` `state` shape (schema
+reference only; the AGPL module is not depended on, per prior-art.md §4).
 
 | identifier | German label |
 |---|---|
@@ -161,10 +164,10 @@ Nullable; set exactly when `status = 'rejected'`.
 | `sent` | Angefragt |
 | `answered` | Beantwortet |
 
-### Domain-specific enums (OPEN — no prior art; proposed MVP defaults)
+### Domain-specific enums (no prior art; confirmed at the review gate)
 
-No reference repo models German ambulatory-care recruiting specifics. The value
-sets below are conservative proposals **confirmed at the review gate**; all are
+No reference repo models German ambulatory-care recruiting specifics. The five
+value sets below were confirmed at the review gate on 2026-06-11; all are
 alterable later via `ALTER TYPE ... ADD VALUE` migrations.
 
 `application_source` (loose precedent: Odoo UTM `source_id`/`medium_id`):
@@ -175,8 +178,8 @@ alterable later via `ALTER TYPE ... ADD VALUE` migrations.
 
 `nursing_qualification`: `examined_nurse` Examinierte Pflegefachkraft ·
 `nursing_assistant` Pflegehelfer/in · `nursing_aide_1yr` Einjährig examiniert ·
-`trainee` Auszubildende/r · `care_assistant_unqualified` Betreuungskraft (ohne
-Examen) · `student` Student/in · `other` Sonstige · `none` Keine
+`care_assistant_unqualified` Betreuungskraft (ohne Examen) · `other` Sonstige ·
+`none` Keine
 
 `foreign_qualification_recognition`: `not_applicable` Nicht relevant ·
 `not_started` Noch nicht beantragt · `pending` Anerkennung läuft ·
@@ -188,10 +191,6 @@ Examen) · `student` Student/in · `other` Sonstige · `none` Keine
 
 `team_feedback_status`: `not_requested` Nicht angefragt · `pending` Ausstehend ·
 `positive` Zusage Team · `negative` Absage Team · `more_info_needed` Rückfragen offen
-
-`trial_day_result`: `not_scheduled` Nicht geplant · `scheduled` Geplant ·
-`passed` Erfolgreich · `failed` Nicht erfolgreich · `no_show` Nicht erschienen ·
-`cancelled` Abgesagt
 
 ### Tables
 
@@ -217,7 +216,6 @@ Examen) · `student` Student/in · `other` Sonstige · `none` Keine
 | `rejection_reason` | `rejection_reason` | nullable; CHECK below |
 | `team_proposal` | `text` | nullable (proposed team) |
 | `team_feedback_status` | `team_feedback_status` | `not null default 'not_requested'` |
-| `trial_day_result` | `trial_day_result` | `not null default 'not_scheduled'` |
 | `next_step` | `text` | nullable (Wiedervorlage; surfaced in Phase 5) |
 | `follow_up_date` | `date` | nullable (Wiedervorlage; surfaced in Phase 5) |
 | `deletion_review_date` | `date` | nullable (Phase 7 retention scan) |
@@ -257,7 +255,7 @@ authenticated users are internal staff). `anon` gets no policy. The service-role
 | Terminal stages flagged by an app-level constant, not a stage/status value | atomic-crm `defaultDealPipelineStatuses` / FreeATS pinned "Hired" pattern | 2026-06-11 |
 | Complete candidate spine (incl. `next_step`/`follow_up_date`/team fields) in this phase | Phase 2 is "the spine"; avoids mid-stream column-adding migrations. Feature phases (3–7) add UX/views on top, not schema | 2026-06-11 |
 | RLS = `authenticated` full access, `anon` none; no role matrix | Phase 1 provisions internal users with no roles; principle 6 | 2026-06-11 |
-| OPEN — the 6 domain enum value sets (source, qualification, recognition, mobility, team feedback, trial result) | No prior art; proposed MVP defaults above, confirmed at the review gate | — |
+| The 5 domain enum value sets (source, qualification, recognition, mobility, team feedback) | No prior art; MVP defaults confirmed at the review gate — `trial_day_result` dropped and `nursing_qualification` trimmed (no trainee/student) per stakeholder | 2026-06-11 |
 
 ## Tracking
 
@@ -274,7 +272,7 @@ Each issue references this spec path in its body.
 
 - [ ] `npm run lint` passes.
 - [ ] `npm run build` passes (no type errors, no `any`) with the generated types.
-- [ ] Applying the migration to an empty database creates all 11 enum types,
+- [ ] Applying the migration to an empty database creates all 10 enum types,
       both tables, the update triggers, the check constraint, and the RLS
       policies without error.
 - [ ] Inserting a candidate with `status = 'rejected'` and no `rejection_reason`
@@ -291,7 +289,7 @@ Each issue references this spec path in its body.
 
 | Risk | Mitigation |
 |---|---|
-| Stakeholder rejects the proposed domain enum values | They are MVP defaults flagged OPEN; confirmed at the review gate; alterable via `ALTER TYPE ... ADD VALUE` migrations |
+| A domain enum needs a new value post-MVP | MVP defaults confirmed at the review gate; alterable via `ALTER TYPE ... ADD VALUE` migrations |
 | `ALTER TYPE ... ADD VALUE` cannot run inside a transaction / values cannot be removed or reordered | Accept for the MVP fixed-enum trade-off; if a taxonomy proves volatile, migrate that one enum to a lookup table post-MVP (revisit point recorded) |
 | Implementation blocked because Phase 1 is unmerged | Sequencing is explicit: issues created now, worked only after PR #1 merges and the Supabase wiring exists |
 | `status = 'talent_pool'` without an accepted consent (principle 4) not DB-enforced here | Out of scope by design; the invariant is wired in the Phase 7 consent workflow (trigger or app logic) |
@@ -301,3 +299,11 @@ Each issue references this spec path in its body.
 - 2026-06-11: Planning kickoff — user chose to plan Phase 2 ahead of the
   roadmap's Phase-1-first focus (AskUserQuestion); domain values to be derived
   from prior-art references, not the Excel.
+- 2026-06-11: Review gate — reconciled `docs/architecture.md` in this PR (enum
+  source → prior art; `consent` table renamed to `talent_pool_consent`);
+  corrected the OCA `consent_state` attribution to "schema reference only, AGPL
+  not depended on"; softened the consent Outcome to "at most one row per
+  candidate (unique FK), population in Phase 7".
+- 2026-06-11: Review gate (AskUserQuestion) — domain enums confirmed; dropped
+  `trial_day_result` entirely (the `trial_day` / Hospitation *stage* stays) and
+  removed `trainee` + `student` from `nursing_qualification`. 10 enum types.
