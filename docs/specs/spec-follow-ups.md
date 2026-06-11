@@ -1,6 +1,6 @@
 # Spec: Follow-ups (Wiedervorlage) (Phase 5)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-11
 
 The surfacing layer over the existing `next_step` / `follow_up_date` columns: a
@@ -16,10 +16,12 @@ edited via the Phase 3 form; this phase only makes due items visible.
       "today" (Europe/Berlin) into `overdue` / `due_today` / `due_this_week` /
       `upcoming` / `none`, with German labels from a shared map; it is unit-checkable
       with an injected reference date (no hidden `new Date()` inside the predicate).
-- [ ] Candidates with an overdue or due follow-up are surfaced (location per the
-      review-gate decision), sorted by `follow_up_date` ascending, each row showing
-      the candidate name, `next_step`, and the follow-up date, and linking to the
-      candidate detail.
+- [ ] Candidates with an `overdue`, `due_today`, or `due_this_week` (rolling
+      next-7-days) follow-up are surfaced in **both** a dashboard "Wiedervorlage"
+      card and a candidate-list treatment (overdue/due highlight + "nur fällige"
+      filter), sorted by `follow_up_date` ascending, each row showing the candidate
+      name, `next_step`, and the follow-up date and linking to the candidate
+      detail.
 - [ ] Overdue follow-ups are visually distinct from merely due-soon ones, styled
       from design tokens — no hardcoded hex (principle 8).
 - [ ] A candidate with a `null` `follow_up_date` is never surfaced as due;
@@ -36,21 +38,35 @@ edited via the Phase 3 form; this phase only makes due items visible.
 
 - **Date-bucket utility** — `src/lib/candidates/follow-up.ts`: a `FollowUpBucket`
   union (`overdue` | `due_today` | `due_this_week` | `upcoming` | `none`), a pure
-  `bucketFor(followUpDate, today)` classifier, the German label map for the
-  buckets, and a comparator for sorting due items by date ascending. "Today" is
-  passed in (resolved once, server-side, in Europe/Berlin) so the predicate is
-  deterministic and testable.
-- **Due-follow-ups read path** — a `listDueFollowUps()` helper added to the
-  Phase 3 `src/lib/db/candidates.ts`, returning candidates whose `follow_up_date`
-  is non-null and within the surfaced horizon, ordered ascending, via the same
-  RLS-scoped server client. (For the small dataset it may also be derived from the
-  existing `list()`; the helper keeps the query bounded.)
-- **Surfacing** (the exact surface(s) are an open decision — see Prior decisions):
+  `bucketFor(followUpDate, today)` classifier, a German label map covering the
+  three **surfaced** buckets (`overdue`, `due_today`, `due_this_week`; `upcoming`
+  and `none` are classification-only and never rendered in this phase), and a
+  comparator for sorting due items by date ascending. "Today" is passed in
+  (resolved once, server-side, in Europe/Berlin) so the predicate is deterministic
+  and testable. Classification compares **calendar-date components** (year /
+  month / day) in Europe/Berlin — never `Date` millisecond instants — so DST and
+  midnight never shift a bucket. `due_this_week` is the **rolling next-7-days**
+  window (today through today + 6, inclusive), not a calendar week to Sunday.
+- **Due-follow-ups read path** — no new query. The dashboard card and the list
+  treatment both derive the due set from the Phase 3 `list()` result (which
+  already loads all rows for the small single-team dataset) by applying the bucket
+  utility and the ascending comparator in TypeScript — consistent with Phase 3's
+  no-pagination / client-side-filtering decisions. No `listDueFollowUps()` helper
+  is added unless the dataset later outgrows a whole-table read.
+- **Surfacing** — **both** surfaces (decided at the review gate):
   - a **dashboard "Wiedervorlage" card** on the Phase 1 dashboard listing
-    overdue + due candidates, bucketed and linked; and/or
+    overdue + due candidates (name, `next_step`, follow-up date, bucket marker),
+    each linked to detail, sorted by `follow_up_date` ascending then `last_name`;
+    no row cap in the MVP (small dataset); and/or
   - a **candidate-list treatment** extending the Phase 3
     `components/candidates/candidate-table.tsx`: an overdue/due highlight on the
-    follow-up-date cell plus a "nur fällige Wiedervorlagen" client-side filter.
+    follow-up-date cell driven by the **same bucket utility** (one date-
+    classification source, not a second date parse), plus a "nur fällige
+    Wiedervorlagen" client-side toggle **AND-composed** with the existing Phase 3
+    status / priority / name filters over the same loaded rows.
+
+  Both surfaces show `overdue` + `due_today` + `due_this_week` and hide
+  `upcoming` / `none`.
 - **A follow-up indicator** — a small token-styled badge/marker distinguishing
   `overdue` from `due_today` / `due_this_week`, reused wherever follow-ups surface.
 
@@ -102,9 +118,10 @@ Reference `docs/constitution.md` rather than restating it.
 | Date-bucket predicates over `follow_up_date` (`overdue`/`due_today`/`due_this_week`/`upcoming`/`none`), pure with an injected "today" | atomic-crm `tasksPredicate` pattern (prior-art §3, reuse); purity makes it testable | 2026-06-11 |
 | UI surfacing only — no proactive email or scheduled job; rescheduling = editing the date, no snooze/complete | atomic-crm (no snooze); EspoCRM/Monica cron delivery is reference-only and deferred; architecture "Later (not MVP)"; automated candidate email is a vision non-goal | 2026-06-11 |
 | No new schema/table/column; reuse the Phase 2 columns and the Phase 3 data-access + table modules | Phase 2 already ships `next_step`/`follow_up_date`; avoids parallel modules and a premature `task` table | 2026-06-11 |
-| "Today" resolved server-side in Europe/Berlin and passed into the predicate | German org; `date`-only buckets must not flip at UTC midnight | 2026-06-11 |
-| OPEN — surfacing location: dashboard "Wiedervorlage" card only, candidate-list highlight + "nur fällige" filter only, or both | resolved at the review gate | — |
-| OPEN — time horizon surfaced: overdue + due-today only, vs. overdue + due-today + due-this-week (next 7 days) | resolved at the review gate | — |
+| "Today" resolved server-side in Europe/Berlin and passed into the predicate; classification on calendar-date components, not `Date` instants | German org; `date`-only buckets must not flip at UTC midnight / DST | 2026-06-11 |
+| `due_this_week` = rolling next-7-days window (today .. today + 6, inclusive) | Matches a recruiter's forward horizon; a calendar-week-to-Sunday resets mid-week and is less useful; atomic-crm does not pin the window | 2026-06-11 |
+| Surface in **both** a dashboard "Wiedervorlage" card and the candidate-list treatment (highlight + "nur fällige" filter) | Stakeholder decision at the gate; matches the roadmap "list/dashboard" intent and the vision goal that nothing lives only in an inbox | 2026-06-11 |
+| Surface `overdue` + `due_today` + `due_this_week` (rolling next-7-days); `upcoming` / `none` are not shown | Stakeholder decision at the gate; gives lead time for the 24–48h A-candidate response (vision success criteria) | 2026-06-11 |
 
 ## Tracking
 
@@ -124,14 +141,18 @@ Each issue references this spec path in its body.
 - [ ] `bucketFor` returns `overdue` for a past date, `due_today` for today,
       `due_this_week` for a date within the next-7-days window, `upcoming` beyond
       it, and `none` for `null` — all relative to an injected reference date.
-- [ ] A candidate with a past `follow_up_date` appears in the surfaced due list,
-      flagged overdue; one due today appears flagged due-today; one with `null`
-      never appears.
+- [ ] A candidate with a past `follow_up_date` appears in both the dashboard card
+      and (highlighted) the candidate list, flagged overdue; one due today is
+      flagged due-today; one due within the next 7 days appears as due-this-week;
+      one due in 10 days and one with `null` appear in neither surface.
+- [ ] The "nur fällige" list toggle narrows the table to due/overdue rows and
+      composes (AND) with an active status/priority filter.
 - [ ] Editing a surfaced candidate's `follow_up_date` to a future date (Phase 3
       form) removes it from the due set on reload.
 - [ ] Overdue and due-soon items are visually distinguishable and use design
       tokens (no hardcoded hex).
-- [ ] No scheduled function, cron, migration, or new table is added in this phase.
+- [ ] The diff adds no file under `supabase/migrations/` and no cron / Supabase
+      Edge Function — the feature is read-only over the existing column.
 
 ## Risks and mitigations
 
@@ -151,3 +172,15 @@ Each issue references this spec path in its body.
   atomic-crm tasks-predicate pattern (prior-art §3); proactive reminders and a
   task table stay out (architecture "Later", vision non-goal). Two scope
   decisions (surfacing location, time horizon) marked OPEN for the review gate.
+- 2026-06-11: Review gate — dropped the redundant `listDueFollowUps()` query (the
+  due set derives from the Phase 3 `list()` result + the bucket utility, matching
+  Phase 3's whole-table read); pinned the `due_this_week` window to a rolling
+  next-7-days and the classification to calendar-date components in Europe/Berlin;
+  specified the "nur fällige" filter as AND-composed with the existing Phase 3
+  filters with the bucket utility as the single highlight source; set the card
+  sort (`follow_up_date` asc, then `last_name`) with no MVP row cap; scoped the
+  German label map to the three surfaced buckets only.
+- 2026-06-11: Review gate (AskUserQuestion) — resolved both open decisions:
+  surface in **both** the dashboard card and the candidate-list treatment; time
+  horizon = `overdue` + `due_today` + `due_this_week` (rolling next-7-days). Spec
+  flipped to READY.
