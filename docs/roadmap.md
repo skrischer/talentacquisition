@@ -9,7 +9,7 @@
 
 | Phase | Name | Spec | Milestone |
 |---|---|---|---|
-| 1 | Foundation & Auth | — | — |
+| 1 | Foundation & Auth | [spec](specs/spec-foundation-auth.md) | [#1](https://github.com/skrischer/talentacquisition/milestone/1) |
 | 2 | Data model | — | — |
 | 3 | Candidate management | — | — |
 | 4 | Pipeline board | — | — |
@@ -49,9 +49,10 @@ A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 **Phase 1: Foundation & Auth**
 
 Stand up the Next.js + Tailwind + shadcn/ui + Supabase skeleton with an
-internal-only login and an RLS-protected app shell, so every later phase has a
-deployable, authenticated foundation to build on. This is what the next
-`/plan 1` (or `/plan foundation`) run should pick up.
+internal-only magic-link login and an RLS-ready app shell, so every later phase
+has a deployable, authenticated foundation to build on. Planned: spec is `READY`
+and milestone [#1](https://github.com/skrischer/talentacquisition/milestone/1)
+holds the five steps — `/implement 3` picks up the first.
 
 ## North star
 
