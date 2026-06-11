@@ -10,7 +10,7 @@
 | Phase | Name | Spec | Milestone |
 |---|---|---|---|
 | 1 | Foundation & Auth | [spec](specs/spec-foundation-auth.md) | [#1](https://github.com/skrischer/talentacquisition/milestone/1) |
-| 2 | Data model | — | — |
+| 2 | Data model | [spec](specs/spec-data-model.md) | [#2](https://github.com/skrischer/talentacquisition/milestone/2) |
 | 3 | Candidate management | — | — |
 | 4 | Pipeline board | — | — |
 | 5 | Follow-ups (Wiedervorlage) | — | — |
@@ -27,9 +27,9 @@ A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
   (server + browser), Supabase Auth login, and an RLS-protected app shell —
   internal users only. The walking skeleton that builds and deploys.
 - **2 — Data model.** Migrations for the spine: the `candidate` table, enums
-  derived from the Excel `Listen` sheet, the stage / status / priority
-  separation, the rejection-reason check constraint, the `consent` table,
-  `deletion_review_date`, RLS policies, and generated types. Most of the
+  derived from professional ATS references, the stage / status / priority
+  separation, the rejection-reason check constraint, the `talent_pool_consent`
+  table, `deletion_review_date`, RLS policies, and generated types. Most of the
   DB-layer architecture principles are enforced here.
 - **3 — Candidate management.** List/table + detail view + create/edit form
   (react-hook-form + zod). Replaces the Excel `Bewerber-ATS` sheet — the core
@@ -46,13 +46,17 @@ A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 
 ## Current focus
 
-**Phase 1: Foundation & Auth**
+**Phase 2: Data model** (planned; implementation gated behind Phase 1)
 
-Stand up the Next.js + Tailwind + shadcn/ui + Supabase skeleton with an
-internal-only magic-link login and an RLS-ready app shell, so every later phase
-has a deployable, authenticated foundation to build on. Planned: spec is `READY`
-and milestone [#1](https://github.com/skrischer/talentacquisition/milestone/1)
-holds the five steps — `/implement 3` picks up the first.
+The schema spine — 10 enum types, the `candidate` table with the
+stage/status/priority separation and rejection-reason CHECK, the
+`talent_pool_consent` table, `deletion_review_date`, RLS, and generated types.
+Spec is `READY` and milestone
+[#2](https://github.com/skrischer/talentacquisition/milestone/2) holds the six
+steps. Implementation waits on Phase 1 (milestone
+[#1](https://github.com/skrischer/talentacquisition/milestone/1), in progress)
+landing the Supabase wiring. Next phase to `/plan` is **3 — Candidate
+management**.
 
 ## North star
 
