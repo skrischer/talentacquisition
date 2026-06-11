@@ -144,3 +144,7 @@ Each issue references this spec path in its body.
   runs `eslint .` directly; the ruleset stays `eslint-config-next` and the
   workflow command (`npm run lint`) is unchanged. `shadcn` resolved to 4.11.0
   under the `^4.0.5` range (build green).
+- 2026-06-11: Supabase clients (#4). `@supabase/ssr@^0.12` + `@supabase/supabase-js@^2.108`
+  (newer than `mag`'s 2.99; same `^2` line). Both factories export `createClient`
+  (Supabase convention; disambiguated by import path). A placeholder `Database`
+  type keeps the clients typed without `any` until Phase 2 regenerates it.
