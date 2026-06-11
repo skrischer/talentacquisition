@@ -11,7 +11,7 @@
 |---|---|---|---|
 | 1 | Foundation & Auth | [spec](specs/spec-foundation-auth.md) | [#1](https://github.com/skrischer/talentacquisition/milestone/1) |
 | 2 | Data model | [spec](specs/spec-data-model.md) | [#2](https://github.com/skrischer/talentacquisition/milestone/2) |
-| 3 | Candidate management | — | — |
+| 3 | Candidate management | [spec](specs/spec-candidate-management.md) | [#3](https://github.com/skrischer/talentacquisition/milestone/3) |
 | 4 | Pipeline board | — | — |
 | 5 | Follow-ups (Wiedervorlage) | — | — |
 | 6 | Dashboard KPIs | — | — |
@@ -46,17 +46,19 @@ A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 
 ## Current focus
 
-**Phase 2: Data model** (planned; implementation gated behind Phase 1)
+**Phase 3: Candidate management** (planned; implementation gated behind Phases 1 & 2)
 
-The schema spine — 10 enum types, the `candidate` table with the
-stage/status/priority separation and rejection-reason CHECK, the
-`talent_pool_consent` table, `deletion_review_date`, RLS, and generated types.
-Spec is `READY` and milestone
-[#2](https://github.com/skrischer/talentacquisition/milestone/2) holds the six
-steps. Implementation waits on Phase 1 (milestone
-[#1](https://github.com/skrischer/talentacquisition/milestone/1), in progress)
-landing the Supabase wiring. Next phase to `/plan` is **3 — Candidate
-management**.
+The first visible win — the candidate CRUD surface that replaces the Excel
+`Bewerber-ATS` sheet: a list/table with client-side status/priority filter and
+name search, a detail view, and one shared create/edit form (react-hook-form +
+zod) writing through server actions on the RLS-scoped server client. Spec is
+`READY` and milestone
+[#3](https://github.com/skrischer/talentacquisition/milestone/3) holds the six
+steps (#18–#23). Implementation waits on Phase 1 (milestone
+[#1](https://github.com/skrischer/talentacquisition/milestone/1), in progress;
+scaffold #16 landed) and Phase 2 (milestone
+[#2](https://github.com/skrischer/talentacquisition/milestone/2)). Next phase to
+`/plan` is **4 — Pipeline board**.
 
 ## North star
 
