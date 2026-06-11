@@ -13,12 +13,15 @@
 | 2 | Data model | [spec](specs/spec-data-model.md) | [#2](https://github.com/skrischer/talentacquisition/milestone/2) |
 | 3 | Candidate management | [spec](specs/spec-candidate-management.md) | [#3](https://github.com/skrischer/talentacquisition/milestone/3) |
 | 4 | Pipeline board | — | — |
-| 5 | Follow-ups (Wiedervorlage) | — | — |
+| 5 | Follow-ups (Wiedervorlage) | [spec](specs/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
 | 6 | Dashboard KPIs | — | — |
 | 7 | Talent-pool consent & retention | — | — |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
+GitHub milestone numbers are sequential and no longer track phase numbers
+(phases were planned out of order): Phase 5 is milestone `#4`. Follow the linked
+URL, not the number.
 
 ## Phase intent
 
@@ -46,19 +49,20 @@ A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 
 ## Current focus
 
-**Phase 3: Candidate management** (planned; implementation gated behind Phases 1 & 2)
+**Phase 5: Follow-ups (Wiedervorlage)** (planned; implementation gated behind Phases 1–3)
 
-The first visible win — the candidate CRUD surface that replaces the Excel
-`Bewerber-ATS` sheet: a list/table with client-side status/priority filter and
-name search, a detail view, and one shared create/edit form (react-hook-form +
-zod) writing through server actions on the RLS-scoped server client. Spec is
-`READY` and milestone
-[#3](https://github.com/skrischer/talentacquisition/milestone/3) holds the six
-steps (#18–#23). Implementation waits on Phase 1 (milestone
-[#1](https://github.com/skrischer/talentacquisition/milestone/1), in progress;
-scaffold #16 landed) and Phase 2 (milestone
-[#2](https://github.com/skrischer/talentacquisition/milestone/2)). Next phase to
-`/plan` is **4 — Pipeline board**.
+The Wiedervorlage surfacing layer over the existing `next_step` /
+`follow_up_date` columns — a pure date-bucket utility (overdue / due-today /
+due-this-week, rolling next 7 days) surfaced in **both** a dashboard
+"Wiedervorlage" card and the candidate list (highlight + "nur fällige" filter).
+No new schema, no scheduled job. Spec is `READY` and milestone
+[#4](https://github.com/skrischer/talentacquisition/milestone/4) holds the four
+steps (#28–#31). Implementation waits on Phases 1–3.
+
+Phase 4 (Pipeline board) was planned in parallel; its spec
+[`spec-pipeline-board.md`](specs/spec-pipeline-board.md) is merged, with its
+milestone/issues being set up in that cycle. Next phase to `/plan` is
+**6 — Dashboard KPIs**.
 
 ## North star
 
