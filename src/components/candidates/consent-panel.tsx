@@ -86,6 +86,8 @@ export function ConsentPanel({
   const {
     register,
     handleSubmit,
+    reset,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ConsentFormInput, unknown, ConsentFormValues>({
     resolver: zodResolver(consentSchema),
@@ -96,8 +98,14 @@ export function ConsentPanel({
     setServerError(null);
     setSaved(false);
     const result = await recordConsent(candidateId, values);
-    if ("error" in result) setServerError(result.error);
-    else setSaved(true);
+    if ("error" in result) {
+      setServerError(result.error);
+      return;
+    }
+    setSaved(true);
+    // Advance the pristine baseline to the just-saved values so the form no
+    // longer reads dirty and a later unchanged re-submit is a clean no-op.
+    reset(getValues());
   });
 
   return (
