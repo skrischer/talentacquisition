@@ -8,7 +8,9 @@ import { cn } from "@/lib/utils";
 // Variants carry only colour; the universal styleguide button typography
 // (Source Sans 3 SemiBold, 14px) and interaction affordances live in the base.
 // Seven styleguide treatments — default = Primary, cta = CTA, secondary,
-// outline, ghost, destructive, link — plus the disabled state on the base.
+// outline, ghost, destructive, link. Disabled is a base state, not a variant:
+// it dims the chosen variant to opacity 0.6 (the styleguide's disabled opacity)
+// rather than recolouring, so it works for every variant incl. ghost/link.
 const buttonVariants = cva(
   "group/button inline-flex shrink-0 items-center justify-center whitespace-nowrap cursor-pointer text-sm font-semibold transition-[background-color,color,border-color,box-shadow,outline-color,opacity] duration-200 outline-none focus-visible:outline-[3px] focus-visible:outline-[var(--focus-color)] focus-visible:outline-offset-2 select-none disabled:pointer-events-none disabled:opacity-60 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
