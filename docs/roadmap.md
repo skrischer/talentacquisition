@@ -16,7 +16,7 @@
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
 | 6 | Dashboard KPIs | [spec](specs/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
-| 8 | CI & acceptance deploys | — | — |
+| 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -56,26 +56,24 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Phase 8: CI & acceptance deploys** (next to `/plan` — the last unplanned phase)
+**Roadmap fully planned — all eight phases have a `READY` spec and a milestone.**
+Focus is implementation; `/loopkit:implement` drives the unblocked Todo issues and
+progress lives in the linked milestones. There is no next phase to `/plan` until
+new phases are added below.
 
-Deterministic machine gates that do not depend on an attended session: a GitHub
-Actions workflow running Verify/Build on every PR, and a milestone-completion
-automation that pushes `qa/phase-<n>` from `main` so Vercel deploys a frozen
-preview for the milestone QA gate. Infrastructure-only; needs nothing from the
-feature phases except Vercel being connected (Phase 1), so it should land
-before the first milestone QA gate. All feature phases (1–7) are planned with
-`READY` specs and milestones; implementation runs in parallel.
+Most recently planned: **Phase 8 — CI & acceptance deploys** (infrastructure; spec
+`READY`, milestone [#8](https://github.com/skrischer/talentacquisition/milestone/8),
+steps #63–#66). A GitHub Actions `ci` workflow (verify + build) becomes the per-PR
+machine gate, **enforced via branch protection** (require `ci`, not the Vercel
+deploy; no GitHub-native review — the in-session agent review stays the process
+review gate, so the loops still auto-merge); an `issues: closed` automation pushes
+`qa/milestone-<n>` on milestone completion for a frozen Vercel QA preview; and
+`docs/workflow.md` Gates is updated to match. The loop sets the two public
+`NEXT_PUBLIC_*` build variables from `.env.local`.
 
-Most recently planned: **Phase 7 — Talent-pool consent & retention** (the MVP
-closer; spec `READY`, milestone
-[#7](https://github.com/skrischer/talentacquisition/milestone/7), steps #53–#56).
-It wires the `talent_pool_consent` record and the `status = 'talent_pool'` ⇒
-accepted-consent invariant (DB triggers), plus a **pg_cron in-database** retention
-scan over `deletion_review_date` that flags due candidates for review; the removal
-action is **anonymize** (PII scrubbed, KPI columns retained — principle 7). Human
-prerequisite: enable the `pg_cron` extension. The retention mechanism is in-DB
-(no service-role client), a deliberate divergence from the Phase 2 spec's
-anticipation.
+Implementation note: Phases 1–2 milestones have completed (their specs are
+archived); the remaining milestones run in parallel, each phase's first issues
+gated on the schema (Phase 2, done) and the surfaces they extend (Phases 1/3).
 
 Implementation still follows the dependency edges — each phase's first issues wait
 on the schema (Phase 2) and the surfaces they extend (Phases 1/3).
