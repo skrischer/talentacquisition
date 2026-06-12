@@ -148,8 +148,10 @@
   --color-bg: var(--color-bg);
   --color-bg-alt: var(--color-bg-alt);
   --color-bg-muted: var(--color-bg-muted);
+  --color-bg-subtle: var(--color-bg-subtle);
   --color-card: var(--color-card);
   --color-border: var(--color-border);
+  --color-border-subtle: var(--color-border-subtle);
   --color-text: var(--color-text);
   --color-text-secondary: var(--color-text-secondary);
   --color-text-muted: var(--color-text-muted);
