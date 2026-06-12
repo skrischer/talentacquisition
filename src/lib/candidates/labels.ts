@@ -157,3 +157,13 @@ export const teamFeedbackStatusOptions = toOptions(
   Constants.public.Enums.team_feedback_status,
   teamFeedbackStatusLabels,
 );
+
+export const consentStateLabels: Record<Enums<"consent_state">, string> = {
+  draft: "Entwurf",
+  sent: "Angefragt",
+  answered: "Beantwortet",
+};
+export const consentStateOptions = toOptions(
+  Constants.public.Enums.consent_state,
+  consentStateLabels,
+);
