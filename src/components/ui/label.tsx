@@ -4,16 +4,31 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Label({ className, ...props }: React.ComponentProps<"label">) {
+// Styleguide field label: Source Sans 3 SemiBold 14px in the foreground colour.
+// `required` appends a destructive asterisk. All colours are design tokens
+// (constitution principle 8).
+function Label({
+  className,
+  required,
+  children,
+  ...props
+}: React.ComponentProps<"label"> & { required?: boolean }) {
   return (
     <label
       data-slot="label"
       className={cn(
-        "flex items-center gap-2 text-base leading-none font-medium text-[var(--color-primary-text)] select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
+        "flex items-center gap-1 text-sm leading-none font-semibold text-foreground select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50",
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {required && (
+        <span className="text-destructive" aria-hidden="true">
+          *
+        </span>
+      )}
+    </label>
   );
 }
 
