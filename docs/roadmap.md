@@ -14,7 +14,7 @@
 | 3 | Candidate management | [spec](specs/spec-candidate-management.md) | [#3](https://github.com/skrischer/talentacquisition/milestone/3) |
 | 4 | Pipeline board | [spec](specs/spec-pipeline-board.md) | [#5](https://github.com/skrischer/talentacquisition/milestone/5) |
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
-| 6 | Dashboard KPIs | — | — |
+| 6 | Dashboard KPIs | [spec](specs/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | — | — |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
@@ -49,19 +49,20 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Phase 5: Follow-ups (Wiedervorlage)** (planned; implementation gated behind Phases 1–3)
+**Phase 7: Talent-pool consent & retention** (next to `/plan` — the last unplanned phase)
 
-The Wiedervorlage surfacing layer over the existing `next_step` /
-`follow_up_date` columns — a pure date-bucket utility (overdue / due-today /
-due-this-week, rolling next 7 days) surfaced in **both** a dashboard
-"Wiedervorlage" card and the candidate list (highlight + "nur fällige" filter).
-No new schema, no scheduled job. Spec is `READY` and milestone
-[#4](https://github.com/skrischer/talentacquisition/milestone/4) holds the four
-steps (#28–#31). Implementation waits on Phases 1–3.
+The MVP closer: an explicit consent record (`accepted` + `answered_at`) and a
+retention job over `deletion_review_date`. Phase 2 already ships the
+`talent_pool_consent` table and the `deletion_review_date` column; Phase 7 wires
+the consent-capture workflow, the `status = 'talent_pool'` ⇒ accepted-consent
+invariant, and the scheduled retention scan plus the service-role client it
+needs. Once planned, the roadmap is fully specced.
 
-Phases 1–4 are also planned (Phase 4 — Pipeline board, milestone
-[#5](https://github.com/skrischer/talentacquisition/milestone/5)). Next phase to
-`/plan` is **6 — Dashboard KPIs**.
+Phases 1–6 are planned. Most recently **Phase 6 — Dashboard KPIs** (spec
+`READY`, milestone [#6](https://github.com/skrischer/talentacquisition/milestone/6),
+steps #41–#44; visualization via shadcn `chart`/recharts). Implementation still
+follows the dependency edges — Phase 6's views wait on Phases 1–2, its card
+labels on Phase 3.
 
 ## North star
 
