@@ -173,7 +173,7 @@ body {
 }
 
 [data-dark-bg] {
-  --focus-color: #fff;
+  --focus-color: var(--color-footer-text);
 }
 
 input:focus-visible,
