@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -87,6 +87,35 @@
   --font-heading: "Montserrat", system-ui, sans-serif;
   --font-body: "Source Sans 3", system-ui, sans-serif;
 
+  /* Type scale — six steps from the Paper styleguide. Montserrat for the three
+     heading steps, Source Sans 3 for body + label; pair with --font-heading /
+     --font-body at the call site. Each step carries its size, line-height,
+     and (where the styleguide sets it) tracking + weight. */
+  --text-display: 44px;
+  --text-display--line-height: 52px;
+  --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 800;
+
+  --text-h2: 32px;
+  --text-h2--line-height: 40px;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h2--font-weight: 700;
+
+  --text-h3: 22px;
+  --text-h3--line-height: 30px;
+  --text-h3--font-weight: 600;
+
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+
+  --text-body: 16px;
+  --text-body--line-height: 24px;
+
+  --text-label: 12px;
+  --text-label--line-height: 16px;
+  --text-label--letter-spacing: 0.06em;
+  --text-label--font-weight: 600;
+
   --color-primary: var(--color-primary);
   --color-primary-text: var(--color-primary-text);
   --color-secondary: var(--color-secondary);
@@ -106,6 +135,21 @@
   --color-footer-bg: var(--color-footer-bg);
   --color-footer-text: var(--color-footer-text);
   --color-hero-overlay: var(--color-hero-overlay);
+
+  /* shadcn base-token aliases — map the base-nova primitive tokens (referenced
+     by button/badge/card/input and the Phase-6 chart) onto the styleguide
+     palette so generated components render in the brand palette, not shadcn
+     defaults. */
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-card-foreground: var(--color-text);
+  --color-muted: var(--color-bg-muted);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-input: var(--color-border);
+  --color-primary-foreground: var(--color-bg);
+  --color-secondary-foreground: var(--color-bg);
+  --color-accent: var(--color-bg-muted);
+  --color-accent-foreground: var(--color-text);
   --color-ring: var(--color-cta);
 }
 
@@ -129,7 +173,7 @@ body {
 }
 
 [data-dark-bg] {
-  --focus-color: #fff;
+  --focus-color: var(--color-footer-text);
 }
 
 input:focus-visible,
