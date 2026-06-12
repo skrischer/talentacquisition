@@ -7,7 +7,9 @@
 // non-defaulted NOT NULLs). The five defaulted-NOT-NULL enums default to their
 // database defaults rather than null, so a row is never written with a null
 // enum. The rejection-reason biconditional mirrors the DB CHECK
-// `(status = 'rejected') = (rejection_reason is not null)`.
+// `(status = 'rejected') = (rejection_reason is not null)`. The
+// email-or-phone rule keeps the telephone-only intake path open: at least one
+// reachability field must be present.
 
 import { z } from "zod";
 
@@ -69,6 +71,14 @@ export const candidateSchema = z
 
     documents_path: optionalText,
     notes: optionalText,
+  })
+  // At least one of E-Mail / Telefon — keeps the telephone-only intake path the
+  // form hints at; surfaced on the email field, where the form prints the
+  // reachability hint.
+  .refine((data) => Boolean(data.email) || Boolean(data.phone), {
+    message:
+      "Mindestens E-Mail oder Telefon angeben (Telefon-Only-Eingang möglich).",
+    path: ["email"],
   })
   .refine(
     (data) => (data.status === "rejected") === Boolean(data.rejection_reason),
