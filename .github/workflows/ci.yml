@@ -1,0 +1,43 @@
+name: ci
+
+# The per-PR machine gate: the project's Verify + Build (docs/workflow.md
+# Commands) on every pull request, plus push-to-main to catch anything that
+# slipped. The job is named `ci` so branch protection can require it by name.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Cancel a superseded run when a PR branch is pushed again — the build step is
+# the slow part and there is no value in finishing stale runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      # The lockfile is authored with npm 11 (the dev/loop toolchain ships it via
+      # Node 24); Node 20 ships npm 10, which rejects npm 11's optional-dep
+      # entries and fails `npm ci`. Pin npm to match the lockfile's author.
+      - run: npm install -g npm@11
+      - run: npm ci
+      - run: npm run verify
+      - run: npm run build
+        env:
+          # Public NEXT_PUBLIC_* values (already in the client bundle), supplied
+          # as repository variables, not secrets — the build reads them at
+          # prerender time.
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
