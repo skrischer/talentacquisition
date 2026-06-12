@@ -15,7 +15,7 @@
 | 4 | Pipeline board | [spec](specs/spec-pipeline-board.md) | [#5](https://github.com/skrischer/talentacquisition/milestone/5) |
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
 | 6 | Dashboard KPIs | [spec](specs/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
-| 7 | Talent-pool consent & retention | — | — |
+| 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -49,20 +49,24 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Phase 7: Talent-pool consent & retention** (next to `/plan` — the last unplanned phase)
+**Roadmap fully planned — all seven phases have a `READY` spec and a milestone.**
+Focus shifts from planning to implementation; `/loopkit:implement` drives the
+unblocked Todo issues, and progress lives in the linked milestones. There is no
+next phase to `/plan` until new phases are added below.
 
-The MVP closer: an explicit consent record (`accepted` + `answered_at`) and a
-retention job over `deletion_review_date`. Phase 2 already ships the
-`talent_pool_consent` table and the `deletion_review_date` column; Phase 7 wires
-the consent-capture workflow, the `status = 'talent_pool'` ⇒ accepted-consent
-invariant, and the scheduled retention scan plus the service-role client it
-needs. Once planned, the roadmap is fully specced.
+Most recently planned: **Phase 7 — Talent-pool consent & retention** (the MVP
+closer; spec `READY`, milestone
+[#7](https://github.com/skrischer/talentacquisition/milestone/7), steps #53–#56).
+It wires the `talent_pool_consent` record and the `status = 'talent_pool'` ⇒
+accepted-consent invariant (DB triggers), plus a **pg_cron in-database** retention
+scan over `deletion_review_date` that flags due candidates for review; the removal
+action is **anonymize** (PII scrubbed, KPI columns retained — principle 7). Human
+prerequisite: enable the `pg_cron` extension. The retention mechanism is in-DB
+(no service-role client), a deliberate divergence from the Phase 2 spec's
+anticipation.
 
-Phases 1–6 are planned. Most recently **Phase 6 — Dashboard KPIs** (spec
-`READY`, milestone [#6](https://github.com/skrischer/talentacquisition/milestone/6),
-steps #41–#44; visualization via shadcn `chart`/recharts). Implementation still
-follows the dependency edges — Phase 6's views wait on Phases 1–2, its card
-labels on Phase 3.
+Implementation still follows the dependency edges — each phase's first issues wait
+on the schema (Phase 2) and the surfaces they extend (Phases 1/3).
 
 ## North star
 
