@@ -60,8 +60,10 @@ professional ATS reference implementations, not from the legacy Excel.
 - The consent-capture workflow and the `status = 'talent_pool'` ⇒
   accepted-consent invariant enforcement — **Phase 7** (this phase ships the
   table; Phase 7 wires the workflow).
-- The retention job that scans `deletion_review_date` and the service-role
-  client it needs — **Phase 7** (this phase ships only the column).
+- The retention job that scans `deletion_review_date` — **Phase 7** (this phase
+  ships only the column). *(Phase 7 implemented the scan as an in-database
+  pg_cron SECURITY DEFINER function; the anticipated service-role client was not
+  needed — no service-role key is shipped.)*
 - The board's drag-to-reorder write path — **Phase 4** (this phase ships the
   `stage` + `stage_order` columns it persists into).
 - Candidate list/detail/form UI — **Phase 3**.
@@ -78,9 +80,10 @@ Reference `docs/constitution.md` rather than restating it.
   Supabase dashboard, **no roles**. Therefore every authenticated user is
   internal recruiting staff, and RLS reduces to "`authenticated` may do
   everything, `anon` nothing" — no per-role policy matrix in the MVP.
-- Phase 1 introduces no service-role key. The retention job's service-role
-  access (which bypasses RLS) is a Phase 7 concern; this phase adds no
-  service-role client or env var.
+- Phase 1 introduces no service-role key, and this phase adds no service-role
+  client or env var. *(Phase 7 superseded the anticipated service-role retention
+  client: the scan runs in-database via pg_cron as a SECURITY DEFINER function,
+  which bypasses RLS without shipping any service-role key — principle 6.)*
 - Postgres `enum` types per principle 2 and `docs/architecture.md` ("new enum
   value → migration (alter enum)"). Prior art (Odoo, FreeATS) uses config *rows*
   for evolving reasons/stages; the MVP's fixed-enum choice is a deliberate
@@ -241,8 +244,10 @@ CHECK constraint: `(status = 'rejected') = (rejection_reason IS NOT NULL)`.
 
 Enable RLS on both tables. One policy per table granting the `authenticated`
 role `select`/`insert`/`update`/`delete` (`using (true) with check (true)` — all
-authenticated users are internal staff). `anon` gets no policy. The service-role
-(retention job) bypasses RLS and is introduced in Phase 7.
+authenticated users are internal staff). `anon` gets no policy. The Phase 7
+retention job bypasses RLS via an in-database SECURITY DEFINER function under
+pg_cron — not a service-role client, so no service-role key is shipped
+(principle 6).
 
 ## Prior decisions
 
