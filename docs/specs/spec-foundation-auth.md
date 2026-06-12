@@ -148,3 +148,11 @@ Each issue references this spec path in its body.
   (newer than `mag`'s 2.99; same `^2` line). Both factories export `createClient`
   (Supabase convention; disambiguated by import path). A placeholder `Database`
   type keeps the clients typed without `any` until Phase 2 regenerates it.
+- 2026-06-12: Auth (#5). Magic-link end-to-end on `@supabase/ssr`: `(auth)/login`
+  (`signInWithOtp`, `shouldCreateUser: false`), `GET /auth/confirm` (`verifyOtp`
+  on a validated `EmailOtpType`, same-origin-only `next`), `src/middleware.ts`
+  session refresh + public allowlist (`/login`, `/auth`), and a `signOut` server
+  action. Next.js 16.2.9 deprecation-warns the `middleware.ts` file convention in
+  favor of `proxy.ts`; kept `middleware.ts` to honor the pinned decision (build
+  green, middleware registered) — a `proxy.ts` migration is deferred as a
+  deliberate future chore, not folded into this phase.
