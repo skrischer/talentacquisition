@@ -220,3 +220,29 @@ Each issue references this spec path in its body.
   sections, only the three required fields block save; (2) list = sortable table
   **plus** client-side name search and status/priority filters. Spec flipped to
   READY.
+- 2026-06-12: Implemented across #18–#23 (PRs #68–#73). Implementation decisions:
+  - Labels/options are derived from the generated `Constants.public.Enums.*`
+    tuples + a `Record` over each enum union (a missing key is a type error; no
+    enum `as`-casting). `consent_state` is intentionally excluded from the
+    candidate label module — it is a Phase 7 consent concern.
+  - `email`/`phone` are plain optional free text (no format validation) to keep
+    intake friction low; `documents_path` likewise (principle 3).
+  - Badges and all new UI use **only** the design tokens defined in
+    `globals.css` (`primary`/`secondary`/`cta`/`destructive` tints + neutrals),
+    deliberately avoiding the unresolved shadcn tokens (`muted`/`foreground`/…)
+    that the vendored `Input`/`Button`/`Card` still reference (Phase-1 debt,
+    flagged for the Phase 9 design-system phase).
+  - List filters hold plain-string state ("" = all) so the native `<select>`
+    needs no enum cast; missing priority/follow-up sort last in both directions.
+  - The form uses native `<select>`s (not a new shadcn Select primitive) with
+    `setValueAs` mapping ""→undefined for the optional enums; the five
+    defaulted-NOT-NULL enums preselect their DB default. RHF is typed
+    `useForm<CandidateFormInput, unknown, CandidateFormValues>`; server actions
+    accept `unknown` and re-validate via `candidateSchema.safeParse` before the
+    RLS-scoped write, logging failures at the boundary.
+  - The schema gained a German required message for `application_source`
+    ("Bitte eine Quelle wählen") for the empty-select case.
+- 2026-06-12: Milestone QA gate **accepted** by the recruiting owner
+  ("Sieht gut aus"); milestone #3 closed, spec archived. Live UI checks (auth
+  guard, 3-field create, rejection biconditional both ways, edit persistence,
+  search/filter/sort, German labels) confirmed against the deployment.
