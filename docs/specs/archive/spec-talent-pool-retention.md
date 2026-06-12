@@ -251,3 +251,22 @@ Each issue references this spec path in its body.
   KPIs stay accurate — principle 7; GDPR-sound personal-data erasure, prior-art §4).
   Human prerequisite confirmed: the user enables the `pg_cron` extension before the
   retention issues are implemented. Spec accepted and flipped READY.
+- 2026-06-12: Implementation (issues #53–#56). Decisions made while building:
+  - The consent-invariant trigger functions pin `set search_path = ''` (all refs
+    schema-qualified) — Supabase `function_search_path_mutable` hardening on the
+    integrity triggers.
+  - **Anonymize** "voids" the consent by nulling `proof_metadata` **and**
+    `answered_at` via an UPDATE that does not touch `accepted` (so the #53
+    trigger never fires), rather than deleting/un-accepting the row — which the
+    invariant forbids while the candidate is `talent_pool`, a status anonymize
+    must keep for KPI continuity. Anonymize also nulls the candidate's
+    `deletion_review_date` so the next scan does not re-queue the anonymized row.
+  - The retention scan is an in-database pg_cron `SECURITY DEFINER` function with
+    a partial unique index (`one open row per candidate`) as the upsert target;
+    the schedule (7b) is `pg_extension`-guarded. Ships no service-role key
+    (principle 6); the archived `spec-data-model.md` service-role wording was
+    reconciled accordingly.
+- 2026-06-12: Milestone QA gate **accepted** (UI check). `pg_cron` enabled on the
+  remote project and the three migrations pushed (`supabase db push`) at the gate,
+  registering the daily `deletion-review-daily` job. Spec archived; milestone #7
+  closed. **This closes the MVP feature set (Phases 1–8 by content).**
