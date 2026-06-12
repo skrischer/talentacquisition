@@ -17,7 +17,7 @@
 | 6 | Dashboard KPIs | [spec](specs/archive/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/archive/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 | 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
-| 9 | Design system & component library | [spec](specs/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
+| 9 | Design system & component library | [spec](specs/archive/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
 | 10 | Screen implementation | [spec](specs/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
@@ -85,12 +85,14 @@ milestone; there is nothing left for `/plan`. What remains is **implementation**
 `/loopkit:implement` drives the open milestones — Phase 7 (talent-pool consent &
 retention, [#7](https://github.com/skrischer/talentacquisition/milestone/7)),
 Phase 8 (CI & acceptance deploys,
-[#8](https://github.com/skrischer/talentacquisition/milestone/8)), Phase 9
-(design system, [#9](https://github.com/skrischer/talentacquisition/milestone/9)),
+[#8](https://github.com/skrischer/talentacquisition/milestone/8)),
 and Phase 10 (screen implementation,
 [#10](https://github.com/skrischer/talentacquisition/milestone/10)) — following
-the dependency edges (Phase 10's screens depend on Phase 9's components; the
-dashboard / detail retention cards on Phase 7 #56).
+the dependency edges. **Phase 9 (design system,
+[#9](https://github.com/skrischer/talentacquisition/milestone/9)) is complete and
+accepted** — its token foundation and component library are now available to
+Phase 10's screens; the dashboard / detail retention cards still depend on
+Phase 7 #56.
 
 Most recently planned: **Phase 10 — Screen implementation** (spec `READY`,
 milestone [#10](https://github.com/skrischer/talentacquisition/milestone/10),
