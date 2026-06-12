@@ -184,3 +184,16 @@ Each issue references this spec path in its body.
   surface in **both** the dashboard card and the candidate-list treatment; time
   horizon = `overdue` + `due_today` + `due_this_week` (rolling next-7-days). Spec
   flipped to READY.
+- 2026-06-12: Implemented #28-#31 (PRs #82, #84, #85, #86), each Verify+Build
+  green and in-session review `APPROVE`. `bucketFor` classifies on the UTC
+  day-index of the ISO calendar-date components (DST- and server-timezone-
+  immune); `resolveToday()` is the single clock read (Europe/Berlin) and is
+  injected server-side. `due_this_week` is day-diff `1..6` (today is
+  `due_today`). The badge (#29) is the single render of a bucket, reused by the
+  dashboard card (#30) and the list cell (#31); the list filter and highlight
+  call the same `bucketFor`, no second date parse. No migration, cron, or Edge
+  Function — read-only over the existing column.
+- 2026-06-12: Milestone QA gate accepted ("Sieht gut aus"). Confirmed at the
+  gate: the follow-up surfaces derive from `list()` and are **status-
+  independent** by design — a candidate in any status with a due
+  `follow_up_date` surfaces; no status scoping was added. Milestone #4 closed.
