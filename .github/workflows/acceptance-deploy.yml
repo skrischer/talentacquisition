@@ -33,23 +33,31 @@ jobs:
           MILESTONE: ${{ github.event.issue.milestone.number }}
         run: |
           set -euo pipefail
-          # GitHub is eventually consistent: the just-closed issue may still be
-          # listed as open for a moment. Re-check once after a short pause before
-          # concluding the milestone is (not) complete.
-          count_open() {
-            gh issue list --milestone "$MILESTONE" --state open \
-              --json number --jq 'length'
+          branch="qa/milestone-$MILESTONE"
+
+          # Authoritative open-issue count from the milestone object (version-
+          # independent, single call). One retry absorbs GitHub's eventual-
+          # consistency lag between the close webhook and the counter update.
+          open_count() {
+            gh api "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE" --jq '.open_issues'
           }
-          open="$(count_open)"
+          open="$(open_count)"
           if [ "$open" -ne 0 ]; then
             sleep 10
-            open="$(count_open)"
+            open="$(open_count)"
           fi
           if [ "$open" -ne 0 ]; then
             echo "Milestone $MILESTONE still has $open open issue(s) — no qa branch."
             exit 0
           fi
-          echo "Milestone $MILESTONE complete — pushing qa/milestone-$MILESTONE."
-          # Idempotent: a redundant run re-pushing the same ref is a harmless
-          # no-op; tolerate a pre-existing branch rather than failing the run.
-          git push origin "HEAD:refs/heads/qa/milestone-$MILESTONE" || true
+
+          # The frozen preview is pushed exactly once. If the branch already
+          # exists (a redundant run — the per-milestone concurrency group
+          # serialises them), leave it untouched; only a genuine push failure
+          # fails the job.
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "$branch already exists — frozen preview already in place."
+            exit 0
+          fi
+          echo "Milestone $MILESTONE complete — pushing $branch."
+          git push origin "HEAD:refs/heads/$branch"
