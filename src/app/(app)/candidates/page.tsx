@@ -9,10 +9,16 @@ import { list } from "@/lib/db/candidates";
 // RLS-scoped server client (the (app) layout guard ensures a session), then
 // hands them to the client table for search/filter/sort without a round-trip.
 // "Today" is resolved here (Europe/Berlin, server-side) and passed in so the
-// follow-up highlight never depends on the client clock.
-export default async function CandidatesPage() {
+// follow-up highlight never depends on the client clock. The `q` search param —
+// set by the global header search — seeds the table's initial name filter.
+export default async function CandidatesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
   const candidates = await list();
   const today = resolveToday();
+  const { q } = await searchParams;
 
   return (
     <div className="flex flex-col gap-6">
@@ -22,7 +28,11 @@ export default async function CandidatesPage() {
         </h1>
         <Button render={<Link href="/candidates/new" />}>Neuer Bewerber</Button>
       </div>
-      <CandidateTable candidates={candidates} today={today} />
+      <CandidateTable
+        candidates={candidates}
+        today={today}
+        initialSearch={q ?? ""}
+      />
     </div>
   );
 }

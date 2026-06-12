@@ -140,11 +140,13 @@ function SortHeader({
 export function CandidateTable({
   candidates,
   today,
+  initialSearch = "",
 }: {
   candidates: Candidate[];
   today: string;
+  initialSearch?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   // Filter values are plain strings ("" = all) so the native <select> onChange
   // needs no enum cast; comparing an enum column to the string is sound.
   const [statusFilter, setStatusFilter] = useState("");
