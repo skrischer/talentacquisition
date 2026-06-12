@@ -17,7 +17,7 @@
 | 6 | Dashboard KPIs | [spec](specs/archive/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 | 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
-| 9 | Design system & component library | — | — |
+| 9 | Design system & component library | [spec](specs/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
 | 10 | Screen implementation | — | — |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
@@ -80,26 +80,24 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Phase 9: Design system & component library** (next to `/plan` — **gated on
-the design hand-off**)
+**Phase 10: Screen implementation** (next to `/plan`)
 
-A Paper-designed styleguide plus screens for all pages are in progress (WIP).
-Once the design is finalized, Phase 9 turns the styleguide into design tokens
-and a shadcn/ui-based component library, and Phase 10 implements every page
-after the screens on top of it. `/plan` must not pick Phase 9 before the
-hand-off is final — the spec derives its component inventory from the screens.
-Until then there is nothing to plan; `/loopkit:implement` drives the unblocked
-Todo issues of Phases 3–8.
+The Paper hand-off is **final** (styleguide + 7 desktop + 5 mobile screens), so
+Phases 9 and 10 are unblocked. Phase 9 is now planned; Phase 10 — implementing
+every page (login, app shell/nav, candidate list/detail/form, board, dashboard,
+Wiedervorlage) on the Phase-9 library plus the functional deltas — is the next
+phase to `/plan`, and its first issue depends on Phase 9 closing.
 
-Most recently planned: **Phase 8 — CI & acceptance deploys** (infrastructure; spec
-`READY`, milestone [#8](https://github.com/skrischer/talentacquisition/milestone/8),
-steps #63–#66). A GitHub Actions `ci` workflow (verify + build) becomes the per-PR
-machine gate, **enforced via branch protection** (require `ci`, not the Vercel
-deploy; no GitHub-native review — the in-session agent review stays the process
-review gate, so the loops still auto-merge); an `issues: closed` automation pushes
-`qa/milestone-<n>` on milestone completion for a frozen Vercel QA preview; and
-`docs/workflow.md` Gates is updated to match. The loop sets the two public
-`NEXT_PUBLIC_*` build variables from `.env.local`.
+Most recently planned: **Phase 9 — Design system & component library** (spec
+`READY`, milestone [#9](https://github.com/skrischer/talentacquisition/milestone/9),
+steps #90–#95). `globals.css` becomes talentacquisition's own token source
+(superseding the vendored `mag` tokens) and gains the shadcn base-token /
+`--chart-*` aliases the shipped Phase-6 chart relies on; a shadcn/ui component
+library covers every element the screens use (actions, badges, form controls,
+data-display, surfaces), each matched to the styleguide and built responsive; and
+a dev-only `/styleguide` gallery is the visual-diff surface. No product pages
+change — that is Phase 10; the chart stays Phase 6 (#43), the nav/app-shell
+composition Phase 10, retention actions Phase 7.
 
 Implementation note: Phases 1–2 milestones have completed (their specs are
 archived); the remaining milestones run in parallel, each phase's first issues
