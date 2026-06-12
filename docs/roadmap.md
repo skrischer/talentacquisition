@@ -18,7 +18,7 @@
 | 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 | 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 | 9 | Design system & component library | [spec](specs/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
-| 10 | Screen implementation | — | — |
+| 10 | Screen implementation | [spec](specs/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -80,24 +80,28 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Phase 10: Screen implementation** (next to `/plan`)
+**Roadmap fully planned** — every phase (1–10) now has a `READY` spec and a
+milestone; there is nothing left for `/plan`. What remains is **implementation**:
+`/loopkit:implement` drives the open milestones — Phase 7 (talent-pool consent &
+retention, [#7](https://github.com/skrischer/talentacquisition/milestone/7)),
+Phase 8 (CI & acceptance deploys,
+[#8](https://github.com/skrischer/talentacquisition/milestone/8)), Phase 9
+(design system, [#9](https://github.com/skrischer/talentacquisition/milestone/9)),
+and Phase 10 (screen implementation,
+[#10](https://github.com/skrischer/talentacquisition/milestone/10)) — following
+the dependency edges (Phase 10's screens depend on Phase 9's components; the
+dashboard / detail retention cards on Phase 7 #56).
 
-The Paper hand-off is **final** (styleguide + 7 desktop + 5 mobile screens), so
-Phases 9 and 10 are unblocked. Phase 9 is now planned; Phase 10 — implementing
-every page (login, app shell/nav, candidate list/detail/form, board, dashboard,
-Wiedervorlage) on the Phase-9 library plus the functional deltas — is the next
-phase to `/plan`, and its first issue depends on Phase 9 closing.
-
-Most recently planned: **Phase 9 — Design system & component library** (spec
-`READY`, milestone [#9](https://github.com/skrischer/talentacquisition/milestone/9),
-steps #90–#95). `globals.css` becomes talentacquisition's own token source
-(superseding the vendored `mag` tokens) and gains the shadcn base-token /
-`--chart-*` aliases the shipped Phase-6 chart relies on; a shadcn/ui component
-library covers every element the screens use (actions, badges, form controls,
-data-display, surfaces), each matched to the styleguide and built responsive; and
-a dev-only `/styleguide` gallery is the visual-diff surface. No product pages
-change — that is Phase 10; the chart stays Phase 6 (#43), the nav/app-shell
-composition Phase 10, retention actions Phase 7.
+Most recently planned: **Phase 10 — Screen implementation** (spec `READY`,
+milestone [#10](https://github.com/skrischer/talentacquisition/milestone/10),
+steps #101–#108). Every page is rebuilt to the final Paper screens on the Phase-9
+library — app shell / nav (sidebar + mobile bottom-tab + header search), login,
+candidate list / detail / form, board, dashboard, and the dedicated Wiedervorlage
+page — all responsive, with the functional deltas as explicit issues
+(Erledigt / Verschieben, stage / source filters + client pagination, the
+email-or-phone rule, the KPI stat row, label-copy reconciliation). No migration;
+the chart / views stay Phase 6, retention stays Phase 7 (slotted via
+`Depends on #56`).
 
 Implementation note: Phases 1–2 milestones have completed (their specs are
 archived); the remaining milestones run in parallel, each phase's first issues
