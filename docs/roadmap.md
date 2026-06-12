@@ -15,7 +15,7 @@
 | 4 | Pipeline board | [spec](specs/archive/spec-pipeline-board.md) | [#5](https://github.com/skrischer/talentacquisition/milestone/5) |
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/archive/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
 | 6 | Dashboard KPIs | [spec](specs/archive/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
-| 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
+| 7 | Talent-pool consent & retention | [spec](specs/archive/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 | 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 | 9 | Design system & component library | [spec](specs/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
 | 10 | Screen implementation | [spec](specs/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
