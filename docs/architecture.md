@@ -34,7 +34,7 @@
 - **`talent_pool_consent`** — talent-pool consent record: `candidate_id`,
   `accepted`, `state`, `answered_at`, audit metadata.
 - **Enums** — derived from professional ATS references (see
-  `docs/specs/spec-data-model.md`), not the legacy Excel: source, qualification,
+  `docs/specs/archive/spec-data-model.md`), not the legacy Excel: source, qualification,
   recognition status, priority (A/B/C/D), stage, status, mobility, team status,
   hospitation result, rejection reason.
 - **KPI views** — Postgres views aggregating `candidate`: per month, by source,
