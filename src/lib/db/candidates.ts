@@ -4,6 +4,7 @@
 // shapes track the schema. Reads are RSC server components, writes are server
 // actions — both call these functions on the per-request server client.
 
+import { bucketFor } from "@/lib/candidates/follow-up";
 import { type PipelineStage } from "@/lib/candidates/stages";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables, TablesInsert, TablesUpdate } from "@/lib/supabase/types";
@@ -29,6 +30,20 @@ export async function list(): Promise<Candidate[]> {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
+}
+
+// Count of overdue follow-ups for the nav badge. Reads only `follow_up_date`
+// (not whole rows) and classifies via the Phase-5 bucket utility — the same
+// single classification source the dashboard card and list treatment use, so
+// the count never forks the bucket logic. "today" is resolved by the caller.
+export async function countOverdueFollowUps(today: string): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("candidate")
+    .select("follow_up_date");
+  if (error) throw error;
+  return data.filter((row) => bucketFor(row.follow_up_date, today) === "overdue")
+    .length;
 }
 
 export async function getById(id: string): Promise<Candidate | null> {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { LogOut } from "lucide-react";
 
@@ -7,8 +8,8 @@ import { HeaderSearch } from "@/components/app-shell/header-search";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
-import { bucketFor, resolveToday } from "@/lib/candidates/follow-up";
-import { list } from "@/lib/db/candidates";
+import { resolveToday } from "@/lib/candidates/follow-up";
+import { countOverdueFollowUps } from "@/lib/db/candidates";
 import { createClient } from "@/lib/supabase/server";
 
 // Derives the email-local part into up-to-two uppercase initials for the
@@ -46,9 +47,7 @@ export default async function AppLayout({
   // (Phase-5 `bucketFor`) the dashboard card and list treatment use; "today"
   // is resolved server-side in the org timezone.
   const today = resolveToday();
-  const overdueCount = (await list()).filter(
-    (candidate) => bucketFor(candidate.follow_up_date, today) === "overdue",
-  ).length;
+  const overdueCount = await countOverdueFollowUps(today);
 
   const initials = initialsFromEmail(user?.email);
 
@@ -102,7 +101,9 @@ export default async function AppLayout({
               talentacquisition
             </Link>
             <div className="flex flex-1 justify-end md:justify-start">
-              <HeaderSearch />
+              <Suspense>
+                <HeaderSearch />
+              </Suspense>
             </div>
           </div>
         </header>

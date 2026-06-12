@@ -75,7 +75,7 @@ export function SidebarNav({ overdueCount }: { overdueCount: number }) {
             <Icon className="size-5 shrink-0" aria-hidden="true" />
             <span className="flex-1">{label}</span>
             {showCount && (
-              <CountBadge tone="alert" aria-label={`${overdueCount} überfällig`}>
+              <CountBadge tone="alert">
                 {overdueCount}
               </CountBadge>
             )}
@@ -116,7 +116,6 @@ export function BottomNav({ overdueCount }: { overdueCount: number }) {
                 <CountBadge
                   tone="alert"
                   className="absolute -right-3 -top-1.5 h-4 min-w-4 px-1 text-[10px] leading-none"
-                  aria-label={`${overdueCount} überfällig`}
                 >
                   {overdueCount}
                 </CountBadge>
