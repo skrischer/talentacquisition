@@ -1,0 +1,55 @@
+name: acceptance-deploy
+
+# On milestone completion, push a frozen acceptance branch so Vercel's GitHub
+# App deploys a stable preview for the milestone QA gate. No attended step, no
+# PAT — the default GITHUB_TOKEN pushes the branch; Vercel deploys it via its
+# own webhook (a GITHUB_TOKEN push does not re-trigger Actions, which is fine).
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  push-qa-branch:
+    # Only issues that belong to a milestone can complete one.
+    if: ${{ github.event.issue.milestone != null }}
+    runs-on: ubuntu-latest
+    # Serialise runs for the same milestone so two near-simultaneous closes
+    # cannot race; never cancel an in-flight push.
+    concurrency:
+      group: qa-milestone-${{ github.event.issue.milestone.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+      - name: Push qa/milestone-<n> when the milestone is complete
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MILESTONE: ${{ github.event.issue.milestone.number }}
+        run: |
+          set -euo pipefail
+          # GitHub is eventually consistent: the just-closed issue may still be
+          # listed as open for a moment. Re-check once after a short pause before
+          # concluding the milestone is (not) complete.
+          count_open() {
+            gh issue list --milestone "$MILESTONE" --state open \
+              --json number --jq 'length'
+          }
+          open="$(count_open)"
+          if [ "$open" -ne 0 ]; then
+            sleep 10
+            open="$(count_open)"
+          fi
+          if [ "$open" -ne 0 ]; then
+            echo "Milestone $MILESTONE still has $open open issue(s) — no qa branch."
+            exit 0
+          fi
+          echo "Milestone $MILESTONE complete — pushing qa/milestone-$MILESTONE."
+          # Idempotent: a redundant run re-pushing the same ref is a harmless
+          # no-op; tolerate a pre-existing branch rather than failing the run.
+          git push origin "HEAD:refs/heads/qa/milestone-$MILESTONE" || true
