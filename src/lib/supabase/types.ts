@@ -167,7 +167,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      kpi_applications_per_month: {
+        Row: {
+          count: number | null
+          month: string | null
+        }
+        Relationships: []
+      }
+      kpi_by_priority: {
+        Row: {
+          count: number | null
+          priority: Database["public"]["Enums"]["candidate_priority"] | null
+        }
+        Relationships: []
+      }
+      kpi_by_rejection_reason: {
+        Row: {
+          count: number | null
+          rejection_reason:
+            | Database["public"]["Enums"]["rejection_reason"]
+            | null
+        }
+        Relationships: []
+      }
+      kpi_by_source: {
+        Row: {
+          application_source:
+            | Database["public"]["Enums"]["application_source"]
+            | null
+          count: number | null
+        }
+        Relationships: []
+      }
+      kpi_by_status: {
+        Row: {
+          count: number | null
+          status: Database["public"]["Enums"]["candidate_status"] | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
