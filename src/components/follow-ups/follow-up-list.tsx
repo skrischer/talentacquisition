@@ -13,10 +13,12 @@ import {
   MoreVertical,
 } from "lucide-react";
 
+import type { VariantProps } from "class-variance-authority";
+
 import { PriorityBadge } from "@/components/candidates/priority-badge";
 import { StageBadge } from "@/components/candidates/stage-badge";
 import { Button } from "@/components/ui/button";
-import { CountBadge } from "@/components/ui/count-badge";
+import { CountBadge, countBadgeVariants } from "@/components/ui/count-badge";
 import { DateInput } from "@/components/ui/date-input";
 import {
   DropdownMenu,
@@ -40,6 +42,12 @@ export type FollowUpItem = {
   bucket: SurfacedFollowUpBucket;
 };
 
+// The badge tone of a section count — derived from the CountBadge variants so it
+// stays in lockstep with the badge token set, never an ad-hoc string union.
+type CountBadgeTone = NonNullable<
+  VariantProps<typeof countBadgeVariants>["tone"]
+>;
+
 // The three surfaced sections in display order, each with its German heading,
 // icon, and accent token for the icon + count (constitution principle 8 — no
 // hardcoded hex). overdue is most urgent (destructive), due_today draws the eye
@@ -49,24 +57,28 @@ const SECTIONS: {
   title: string;
   icon: typeof AlertTriangle;
   accent: string;
+  countTone: CountBadgeTone;
 }[] = [
   {
     bucket: "overdue",
     title: "Überfällig",
     icon: AlertTriangle,
     accent: "var(--color-destructive)",
+    countTone: "alert",
   },
   {
     bucket: "due_today",
     title: "Heute fällig",
     icon: Clock,
     accent: "var(--color-cta)",
+    countTone: "primary",
   },
   {
     bucket: "due_this_week",
     title: "Diese Woche",
     icon: CalendarDays,
     accent: "var(--color-primary)",
+    countTone: "neutral",
   },
 ];
 
@@ -100,6 +112,8 @@ function DueChip({
   today: string;
 }) {
   if (bucket === "overdue") {
+    // Inverted argument order (today - followUpDate) for a positive days-overdue
+    // count; bucketFor itself calls it the other way for the signed classifier.
     const overdueBy = calendarDayDiff(today, followUpDate);
     const span = overdueBy === 1 ? "1 Tag" : `${overdueBy} Tage`;
     return (
@@ -242,9 +256,10 @@ export function FollowUpList({
   function handleReschedule(id: string, date: string): void {
     startTransition(async () => {
       setError(null);
-      // A reschedule into the future leaves the surfaced set; drop it
-      // optimistically. The revalidate re-buckets if it stays surfaced.
-      if (date > today) removeItem(id);
+      // Any reschedule re-buckets the row (date >= today, enforced by the date
+      // input's min); drop the now-stale row optimistically and let the server
+      // revalidate re-add it in the correct section if it is still surfaced.
+      removeItem(id);
       const result = await rescheduleFollowUp(id, date);
       if (result?.error) setError(result.error);
     });
@@ -265,11 +280,7 @@ export function FollowUpList({
         </div>
         <div className="flex items-center gap-3">
           <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-text-secondary">
-            <Switch
-              checked={onlyOverdue}
-              onCheckedChange={setOnlyOverdue}
-              aria-label="Nur überfällige"
-            />
+            <Switch checked={onlyOverdue} onCheckedChange={setOnlyOverdue} />
             Nur überfällige
           </label>
           <Button
@@ -308,9 +319,7 @@ export function FollowUpList({
                   <h2 className="text-lg font-semibold text-[var(--color-text)]">
                     {section.title}
                   </h2>
-                  <CountBadge
-                    tone={section.bucket === "overdue" ? "alert" : "neutral"}
-                  >
+                  <CountBadge tone={section.countTone}>
                     {rows.length}
                   </CountBadge>
                 </div>

@@ -10,6 +10,11 @@ export type FollowUpActionResult = { error: string };
 // `follow_up_date` column, the same form the Phase-5 bucket utility consumes.
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+// The candidate `id` is a UUID; reject a malformed value before the DB call
+// (defense in depth — RLS and the parameterized `.eq` already guard access).
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Revalidate every surface that reads the due set after a follow-up mutation:
 // the page itself, the nav overdue badge ((app) layout), the dashboard card,
 // and the candidate list/detail follow-up treatment.
@@ -27,6 +32,9 @@ function revalidateFollowUpSurfaces(id: string): void {
 export async function completeFollowUp(
   id: string,
 ): Promise<FollowUpActionResult | void> {
+  if (!UUID.test(id)) {
+    return { error: "Ungültiger Bewerber." };
+  }
   try {
     await update(id, { next_step: null, follow_up_date: null });
   } catch (error) {
@@ -43,6 +51,9 @@ export async function rescheduleFollowUp(
   id: string,
   followUpDate: string,
 ): Promise<FollowUpActionResult | void> {
+  if (!UUID.test(id)) {
+    return { error: "Ungültiger Bewerber." };
+  }
   if (!ISO_DATE.test(followUpDate)) {
     return { error: "Bitte ein gültiges Datum wählen." };
   }
