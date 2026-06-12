@@ -40,7 +40,9 @@ export const candidateSchema = z
     email: optionalText,
     phone: optionalText,
 
-    application_source: z.enum(Constants.public.Enums.application_source),
+    application_source: z.enum(Constants.public.Enums.application_source, {
+      error: "Bitte eine Quelle wählen",
+    }),
     nursing_qualification: z
       .enum(Constants.public.Enums.nursing_qualification)
       .optional(),
