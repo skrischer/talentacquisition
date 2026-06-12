@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Button } from "@/components/ui/button";
 import { signOut } from "@/lib/auth/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -21,9 +23,25 @@ export default async function AppLayout({
     <div className="flex min-h-screen flex-col bg-[var(--color-bg-alt)]">
       <header className="border-b border-[var(--color-border)] bg-[var(--color-card)]">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <span className="font-[family-name:var(--font-heading)] text-lg font-semibold text-[var(--color-primary)]">
-            talentacquisition
-          </span>
+          <div className="flex items-center gap-6">
+            <span className="font-[family-name:var(--font-heading)] text-lg font-semibold text-[var(--color-primary)]">
+              talentacquisition
+            </span>
+            <nav className="flex items-center gap-4 text-sm">
+              <Link
+                href="/"
+                className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)]"
+              >
+                Dashboard
+              </Link>
+              <Link
+                href="/candidates"
+                className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)]"
+              >
+                Bewerber
+              </Link>
+            </nav>
+          </div>
           <div className="flex items-center gap-4">
             {user?.email && (
               <span className="text-sm text-[var(--color-text-secondary)]">
