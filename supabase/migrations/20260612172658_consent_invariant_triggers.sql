@@ -20,6 +20,7 @@
 create function public.enforce_talent_pool_consent()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   if new.status = 'talent_pool'
@@ -50,6 +51,7 @@ create trigger candidate_enforce_talent_pool_consent
 create function public.guard_talent_pool_consent()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   -- An update that keeps the row accepted never threatens the invariant.
