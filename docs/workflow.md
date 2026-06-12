@@ -82,17 +82,30 @@ spec never lists steps; the issues never restate the design. The spec's
 
 ## Gates
 
-- **Per PR — machine gates, no human stop:** Verify green + in-session agent
-  review (`VERDICT: APPROVE`, via the Agent tool — never a billed CLI) ->
-  autonomous squash-merge.
+- **Per PR — machine gates, no human stop:** two layers, both required before
+  the autonomous squash-merge:
+  - the **`ci` GitHub Actions check** (`.github/workflows/ci.yml`: `npm ci` +
+    `npm run verify` + `npm run build` on Node 20) — **required via `main`
+    branch protection**, so a red `ci` hard-blocks the merge for everyone
+    (`enforce_admins: true`); only `ci` is required, never the Vercel deploy,
+    and `strict: false` so a PR need not be rebased onto the latest `main` to
+    merge. The loop still runs Verify locally each iteration for fast feedback;
+    `ci` is the authoritative pre-merge gate.
+  - the **in-session agent review** (`VERDICT: APPROVE`, via the Agent tool —
+    never a billed CLI) as the process-level review gate. Branch protection
+    requires **no** GitHub-native review, so after agent-APPROVE + green `ci`
+    the loop squash-merges with no human approval.
 - **Per milestone — human gates:**
   - Planning: the spec-acceptance gate — genuinely-open decisions
     (AskUserQuestion, never guess) + human-prerequisites handover, then
     `READY` + merge.
   - Implementation: the milestone QA gate — when the milestone's last issue
-    closes, QA scenarios are derived from the spec's Verification section; the
-    human accepts or files regressions.
-- QA-gate default check: `UI check`.
+    closes, `.github/workflows/acceptance-deploy.yml` pushes a frozen
+    `qa/milestone-<n>` branch from `main` that Vercel deploys as the stable
+    preview; QA scenarios are derived from the spec's Verification section and
+    checked against that preview; the human accepts or files regressions.
+- QA-gate default check type: a manual `UI check` against the
+  `qa/milestone-<n>` Vercel preview — a process step, not a GitHub status check.
 
 ## Autonomy
 
