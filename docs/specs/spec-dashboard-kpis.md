@@ -16,9 +16,9 @@ client round-trips (constitution principle 7).
       `rejection_reason` — each a single SQL `group by` (or `date_trunc`) with no
       per-bucket client round-trip (principle 7); they live in
       `supabase/migrations/` and apply cleanly on top of the Phase 2 schema.
-- [ ] Every KPI view is `security_invoker = on` and has no grant to `anon`, so an
-      unauthenticated query returns nothing and the views never bypass `candidate`
-      RLS (principle 6).
+- [ ] Every KPI view is `security_invoker = on` and the migration explicitly
+      `REVOKE SELECT … FROM anon, public` on each view, so an unauthenticated query
+      returns nothing and the views never bypass `candidate` RLS (principle 6).
 - [ ] Regenerated TypeScript types include the views and `npm run build` /
       `npm run lint` pass with no `any`.
 - [ ] A server-side data-access module (`src/lib/db/kpis.ts`) reads each view
@@ -36,17 +36,25 @@ client round-trips (constitution principle 7).
 ### In scope
 
 - **KPI Postgres views** — an additive migration (`supabase/migrations/`), one
-  view per metric, each `create view … with (security_invoker = on)` and revoked
-  from `anon`:
+  view per metric, each `create view … with (security_invoker = on)` followed by
+  `REVOKE SELECT ON <view> FROM anon, public` **in the same migration** (Supabase
+  default privileges otherwise grant `anon` SELECT on new public-schema views — the
+  revoke is the migration-level guard, not just the behavioral test):
   - `kpi_applications_per_month` —
     `date_trunc('month', created_at AT TIME ZONE 'Europe/Berlin')` group-by with a
     `count`, restricted to the rolling **last 12 months** (current month back 11),
-    returning `(month, count)` ordered by month.
+    returning `(month, count)` ordered by month. The window filter
+    (`WHERE date_trunc('month', created_at AT TIME ZONE 'Europe/Berlin') >=
+    date_trunc('month', now() AT TIME ZONE 'Europe/Berlin') - interval '11 months'`)
+    lives **in the view body** (evaluated against `now()` at query time), never in
+    `kpis.ts` — this is the one view that is not a flat all-time aggregate.
   - `kpi_by_source` — `group by application_source` -> `(application_source, count)`.
   - `kpi_by_priority` — `group by priority` -> `(priority, count)`, **including the
     `null` (untriaged) bucket** so the counts reconcile to the candidate total.
   - `kpi_by_status` — `group by candidate_status` -> `(status, count)`.
-  - `kpi_by_rejection_reason` — `group by rejection_reason` over rejected rows ->
+  - `kpi_by_rejection_reason` — `group by rejection_reason` over rejected rows
+    (`WHERE rejection_reason IS NOT NULL`; equivalent to `status = 'rejected'` under
+    the Phase 2 biconditional CHECK, but expressed on the reason column directly) ->
     `(rejection_reason, count)`.
 - **Regenerated types** — `supabase gen types` re-run and committed under
   `src/lib/supabase`, now including the views.
@@ -89,9 +97,11 @@ Reference `docs/constitution.md` rather than restating it.
   the views aggregate; Phase 1 (`spec-foundation-auth.md`, milestone #1) supplies
   the typed server client and the dashboard placeholder the cards land on.
   **Implementation waits until those land**; the design is independent and is
-  specced now. It does **not** depend on Phases 3/4 — it reuses Phase 3's enum
-  label maps and `lib/db` convention where present but needs only the schema and
-  shell.
+  specced now. The views, types, and `kpis.ts` data-access need only the Phase 2
+  schema and the Phase 1 server client. The **card-label wiring** additionally
+  depends on Phase 3's German enum label maps (`src/lib/candidates/…`, issue #18):
+  the card-components step reuses them rather than duplicating a parallel label
+  source, so that step waits on Phase 3. It does not depend on Phase 4.
 - **Principle 7** — KPIs are SQL aggregates / Postgres views (`group by` an enum,
   or `date_trunc('month', …)`), never per-bucket client round-trips.
 - **Principle 6** — KPI reads are server-side through the RLS-scoped client; the
@@ -130,7 +140,8 @@ Reference `docs/constitution.md` rather than restating it.
 | Month series = rolling last 12 months, bucketed in Europe/Berlin; categorical counts are all-time | Bounded and conventional (all-time month series grows unboundedly); Europe/Berlin matches the Phase 5 timezone decision so months do not flip at UTC midnight | 2026-06-12 |
 | The by-priority view includes a `null`/untriaged bucket | `priority` is nullable until triaged (Phase 2); excluding nulls would make the card under-count vs. the candidate total | 2026-06-12 |
 | German card labels reuse the Phase 3 enum label maps; no second label source | Phase 3 (#18) owns the enum→German maps; one source of truth, principle of reuse | 2026-06-12 |
-| OPEN — visualization approach: dependency-free numeric/table/CSS-bar cards **vs.** shadcn `chart` (recharts) for the month series and breakdowns | Neither precedent nor constraint settles it; a chart is a new dependency (needs approval) and a visible-early-win lever for the management presentation. Recommendation: dependency-free for the MVP. Resolved at the spec-acceptance gate | — |
+| Default DECIDED: dependency-free numeric/table/CSS-bar cards, no chart library. The constitution's dependency-minimization rule sets this default; implementation proceeds dependency-free unless overridden. | Constitution "no new dependency without justification"; over-engineering avoidance for a single screen | 2026-06-12 |
+| OPEN (override only) — whether to add shadcn `chart` (recharts) for the month series, as a visible-early-win lever for the management presentation | A new dependency needs explicit human approval (dependency rule); surfaced at the spec-acceptance gate. Without approval, the dependency-free default above stands | — |
 
 ## Tracking
 
@@ -156,6 +167,10 @@ Each issue references this spec path in its body.
       `kpi_applications_per_month` returns the rolling last 12 months bucketed in
       Europe/Berlin (a 23:30 Europe/Berlin intake on the last day of a month counts
       in that month, not the next).
+- [ ] Rolling-window boundary: a candidate created in the month 11 calendar months
+      ago (Europe/Berlin) appears in `kpi_applications_per_month`; one created in
+      the month 12 months ago does not (guards the `interval '11 months'`
+      off-by-one).
 - [ ] Each dashboard KPI card renders its counts from the view via
       `src/lib/db/kpis.ts`; with zero candidates every card shows a graceful
       zero/empty state.
