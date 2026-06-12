@@ -86,6 +86,7 @@ function ControlledSelect({
   optional = false,
   disabled = false,
   invalid = false,
+  onAfterChange,
 }: {
   control: Control<CandidateFormInput>;
   name: keyof CandidateFormInput;
@@ -94,6 +95,7 @@ function ControlledSelect({
   optional?: boolean;
   disabled?: boolean;
   invalid?: boolean;
+  onAfterChange?: (value: string) => void;
 }) {
   const items: Record<string, string> = placeholder
     ? { "": placeholder, ...labels }
@@ -110,6 +112,7 @@ function ControlledSelect({
           onValueChange={(value) => {
             const next = typeof value === "string" ? value : "";
             field.onChange(optional && next === "" ? undefined : next);
+            onAfterChange?.(next);
           }}
         >
           <SelectTrigger
@@ -197,6 +200,7 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
     control,
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = form;
 
@@ -350,6 +354,13 @@ export function CandidateForm({ candidate }: { candidate?: Candidate }) {
                 control={control}
                 name="status"
                 labels={candidateStatusLabels}
+                onAfterChange={(value) => {
+                  if (value !== "rejected") {
+                    setValue("rejection_reason", undefined, {
+                      shouldValidate: true,
+                    });
+                  }
+                }}
               />
             </FieldRow>
           </div>
