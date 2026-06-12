@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { resolveToday } from "@/lib/candidates/follow-up";
 import { update } from "@/lib/db/candidates";
 
 export type FollowUpActionResult = { error: string };
@@ -56,6 +57,11 @@ export async function rescheduleFollowUp(
   }
   if (!ISO_DATE.test(followUpDate)) {
     return { error: "Bitte ein gültiges Datum wählen." };
+  }
+  // No rescheduling into the past — ISO YYYY-MM-DD strings order chronologically
+  // under lexical comparison, so a string compare is the calendar compare.
+  if (followUpDate < resolveToday()) {
+    return { error: "Das Datum darf nicht in der Vergangenheit liegen." };
   }
   try {
     await update(id, { follow_up_date: followUpDate });
