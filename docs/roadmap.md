@@ -63,10 +63,20 @@ milestone `#4`. Follow the linked URL, not the number.
   badges, form controls, table, cards, navigation, …), each matched against
   the styleguide. No page changes yet. Prerequisite: the Paper design is
   finalized.
-- **10 — Screen implementation.** Rebuild every page to match the Paper
-  screens using the Phase-9 library: login, app shell/navigation, candidate
-  list/detail/form, pipeline board, dashboard, and the follow-up surfaces.
-  Depends on Phase 9 and on the functional pages from Phases 1/3–6.
+- **10 — Screen implementation.** Implement every page to match the Paper
+  screens using the Phase-9 library — after the MVP scope trim the screens ARE
+  the target state: login, app shell/navigation, candidate list/detail/form,
+  pipeline board, dashboard, and the follow-up surfaces. The screens'
+  functional deltas are part of this phase and must be explicit issues in the
+  spec, not subsumed under styling. None needs a migration — all are UI plus
+  server actions on existing columns: the dedicated Wiedervorlage page with
+  Erledigt/Verschieben actions (clear/set `next_step` + `follow_up_date`; no
+  task table), global header search routing to the candidate list, additional
+  list filters (stage, source) with client-side pagination, the
+  email-or-phone-required form rule, and KPI stat-row figures derived from
+  existing views (active A-candidates, month-over-month delta, rejection rate
+  without trend). Depends on Phase 9 and on the functional pages from
+  Phases 1/3–6.
 
 ## Current focus
 
