@@ -1,6 +1,6 @@
 # Spec: Screen implementation (Phase 10)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-12
 
 Implement every product page to match the finalized Paper screens (7 desktop +
@@ -144,7 +144,7 @@ Reference `docs/constitution.md` rather than restating it.
 | Mobile nav = bottom-tab bar; desktop = sidebar | The final Paper screens; the two are distinct compositions of the same Phase-9 primitives | 2026-06-12 |
 | The Phase-9-deferred German label copy (`active` → "In Bearbeitung", `rejected` → "Abgesagt") is reconciled here | It is page-facing copy in a shared module rendered by these pages | 2026-06-12 |
 | Erledigt clears `next_step` + `follow_up_date`; Verschieben sets a new `follow_up_date` (no snooze table, no task model) | Architecture "Later (not MVP)"; matches the Phase-5 reschedule-by-editing decision | 2026-06-12 |
-| OPEN — slot the Phase-7-gated "Löschprüfung fällig" dashboard card and the detail Talentpool consent card now (a cross-milestone `Depends on #56` edge), or defer them to a Phase-10 follow-up after Phase 7 closes? | resolved at the spec-acceptance gate | — |
+| Slot the Phase-7-gated "Löschprüfung fällig" dashboard card and the detail Talentpool consent card **now**, with a cross-milestone `Depends on #56` edge | Stakeholder decision at the spec-acceptance gate; the loop only picks them once #56 closes, so the screens are delivered complete-as-designed in one phase with no rework | 2026-06-12 |
 
 ## Tracking
 
@@ -208,3 +208,8 @@ Each issue references this spec path in its body.
   `(app)/dashboard`). Surfaced one genuinely-open decision for the gate: slot the
   Phase-7-gated Löschprüfung / Talentpool cards now (`Depends on #56`) or defer
   them to a Phase-10 follow-up.
+- 2026-06-12: Spec-acceptance gate (AskUserQuestion) — open decision resolved:
+  **slot the Phase-7-gated Löschprüfung + Talentpool cards now** with a
+  cross-milestone `Depends on #56` edge (the loop picks them only once #56
+  closes). Human prerequisites confirmed: none beyond Paper MCP access. Spec
+  accepted and flipped READY.
