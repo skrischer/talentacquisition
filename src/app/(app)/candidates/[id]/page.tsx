@@ -1,40 +1,90 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import {
+  ChevronRight,
+  Clock,
+  ExternalLink,
+  FileText,
+  Pencil,
+  Trash2,
+  Users,
+} from "lucide-react";
+
 import { ConsentPanel } from "@/components/candidates/consent-panel";
+import { FollowUpBadge } from "@/components/candidates/follow-up-badge";
 import { PriorityBadge } from "@/components/candidates/priority-badge";
 import { StageBadge } from "@/components/candidates/stage-badge";
 import { StatusBadge } from "@/components/candidates/status-badge";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardSectionHeader } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Stepper } from "@/components/ui/stepper";
+import {
+  bucketFor,
+  isSurfacedBucket,
+  resolveToday,
+} from "@/lib/candidates/follow-up";
 import {
   applicationSourceLabels,
   foreignQualificationRecognitionLabels,
   mobilityLabels,
   nursingQualificationLabels,
-  rejectionReasonLabels,
   teamFeedbackStatusLabels,
 } from "@/lib/candidates/labels";
-import { getById } from "@/lib/db/candidates";
+import { PIPELINE_STAGES } from "@/lib/candidates/stages";
+import { getById, type Candidate } from "@/lib/db/candidates";
 import { getByCandidate } from "@/lib/db/consent";
 
+// The seven pipeline steps in the design's short German labels (the styleguide
+// stepper copy), positionally aligned with PIPELINE_STAGES so the candidate's
+// stage maps to its step index.
+const STEPPER_LABELS = [
+  "Neu",
+  "Sichtung",
+  "Telefon",
+  "Gespräch",
+  "Hospitation",
+  "Angebot",
+  "Eingestellt",
+];
+
+const DASH = "—";
+
 function formatDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return DASH;
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day}.${month}.${year}` : value;
 }
 
-const dateTimeFormat = new Intl.DateTimeFormat("de-DE", {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
-function formatDateTime(value: string): string {
-  return dateTimeFormat.format(new Date(value));
+function textValue(value: string | null): string {
+  return value && value.trim() !== "" ? value : DASH;
 }
 
-function textValue(value: string | null): string {
-  return value && value.trim() !== "" ? value : "—";
+function initials(candidate: Candidate): string {
+  const letters = `${candidate.first_name.charAt(0)}${candidate.last_name.charAt(0)}`;
+  return letters.toUpperCase() || "?";
+}
+
+// Whole days from today to the retention review date, and its position in a
+// two-year window (730 days) as a 0-100 progress value. A past date is clamped
+// to a full bar; an absent date renders no countdown.
+function retentionCountdown(
+  reviewDate: string | null,
+  today: string,
+): { daysLeft: number; progress: number } | null {
+  if (!reviewDate) return null;
+  const MS_PER_DAY = 86_400_000;
+  const [ry, rm, rd] = reviewDate.split("-").map(Number);
+  const [ty, tm, td] = today.split("-").map(Number);
+  const daysLeft = Math.round(
+    (Date.UTC(ry, rm - 1, rd) - Date.UTC(ty, tm - 1, td)) / MS_PER_DAY,
+  );
+  if (daysLeft < 0) return { daysLeft, progress: 100 };
+  const WINDOW = 730;
+  const elapsed = WINDOW - Math.min(daysLeft, WINDOW);
+  return { daysLeft, progress: (elapsed / WINDOW) * 100 };
 }
 
 function Field({
@@ -45,29 +95,22 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <dt className="text-xs font-medium text-text-muted">{label}</dt>
-      <dd className="text-sm text-[var(--color-text)]">{children}</dd>
+    <div className="flex flex-col gap-1">
+      <dt className="text-[11px] font-semibold tracking-wide text-text-muted uppercase">
+        {label}
+      </dt>
+      <dd className="text-[15px] text-foreground">{children}</dd>
     </div>
   );
 }
 
-function DetailSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+// A neutral status pill matching the card-header trailing chip in the design.
+function NeutralPill({ children }: { children: React.ReactNode }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">{children}</dl>
-      </CardContent>
-    </Card>
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-status-neutral-bg px-[11px] py-1 text-[13px] leading-4 font-semibold text-text-secondary">
+      <span className="size-[7px] shrink-0 rounded-full bg-border-hover" />
+      {children}
+    </span>
   );
 }
 
@@ -81,107 +124,251 @@ export default async function CandidateDetailPage({
   if (!candidate) notFound();
   const consent = await getByCandidate(id);
 
+  const today = resolveToday();
+  const currentStep = Math.max(0, PIPELINE_STAGES.indexOf(candidate.stage));
+  const followUpBucket = bucketFor(candidate.follow_up_date, today);
+  const retention = retentionCountdown(candidate.deletion_review_date, today);
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <nav
+          aria-label="Brotkrümelnavigation"
+          className="flex items-center gap-2 text-sm"
+        >
           <Link
             href="/candidates"
-            className="text-sm text-[var(--color-secondary)] underline-offset-4 hover:underline"
+            className="text-text-secondary underline-offset-4 hover:text-foreground hover:underline"
           >
-            ← Zurück zur Liste
+            Bewerber
           </Link>
-          <h1 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-[var(--color-primary)]">
-            {candidate.last_name}, {candidate.first_name}
-          </h1>
-        </div>
+          <ChevronRight className="size-4 text-text-muted" aria-hidden="true" />
+          <span className="font-medium text-foreground">
+            {candidate.first_name} {candidate.last_name}
+          </span>
+        </nav>
         <Button render={<Link href={`/candidates/${candidate.id}/edit`} />}>
+          <Pencil className="size-4" aria-hidden="true" />
           Bearbeiten
         </Button>
       </div>
 
-      <DetailSection title="Kontakt">
-        <Field label="Vorname">{textValue(candidate.first_name)}</Field>
-        <Field label="Nachname">{textValue(candidate.last_name)}</Field>
-        <Field label="E-Mail">{textValue(candidate.email)}</Field>
-        <Field label="Telefon">{textValue(candidate.phone)}</Field>
-      </DetailSection>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="flex flex-col gap-6">
+          {/* Identity card */}
+          <Card>
+            <CardContent className="flex flex-col gap-5">
+              <div className="flex items-start gap-4">
+                <Avatar
+                  initials={initials(candidate)}
+                  className="size-16 text-xl"
+                />
+                <div className="flex min-w-0 flex-col gap-2">
+                  <h1 className="font-[family-name:var(--font-heading)] text-[26px] leading-tight font-bold text-foreground">
+                    {candidate.first_name} {candidate.last_name}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StageBadge stage={candidate.stage} />
+                    <StatusBadge status={candidate.status} />
+                    <PriorityBadge priority={candidate.priority} />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-border" />
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Field label="E-Mail">
+                  {candidate.email ? (
+                    <a
+                      href={`mailto:${candidate.email}`}
+                      className="break-all text-secondary underline-offset-4 hover:underline"
+                    >
+                      {candidate.email}
+                    </a>
+                  ) : (
+                    DASH
+                  )}
+                </Field>
+                <Field label="Telefon">
+                  {candidate.phone ? (
+                    <a
+                      href={`tel:${candidate.phone}`}
+                      className="text-secondary underline-offset-4 hover:underline"
+                    >
+                      {candidate.phone}
+                    </a>
+                  ) : (
+                    DASH
+                  )}
+                </Field>
+                <Field label="Quelle">
+                  {applicationSourceLabels[candidate.application_source]}
+                </Field>
+                <Field label="Eingegangen">
+                  {formatDate(candidate.created_at.slice(0, 10))}
+                </Field>
+              </dl>
+            </CardContent>
+          </Card>
 
-      <DetailSection title="Klassifizierung">
-        <Field label="Quelle">
-          {applicationSourceLabels[candidate.application_source]}
-        </Field>
-        <Field label="Pflegequalifikation">
-          {candidate.nursing_qualification
-            ? nursingQualificationLabels[candidate.nursing_qualification]
-            : "—"}
-        </Field>
-        <Field label="Anerkennung ausl. Qualifikation">
-          {
-            foreignQualificationRecognitionLabels[
-              candidate.foreign_qualification_recognition
-            ]
-          }
-        </Field>
-        <Field label="Mobilität">{mobilityLabels[candidate.mobility]}</Field>
-        <Field label="Priorität">
-          {candidate.priority ? (
-            <PriorityBadge priority={candidate.priority} />
-          ) : (
-            "—"
-          )}
-        </Field>
-      </DetailSection>
+          {/* Pipeline stepper */}
+          <Card>
+            <CardContent className="flex flex-col gap-5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-[family-name:var(--font-heading)] text-[17px] leading-snug font-bold text-foreground">
+                  Pipeline-Fortschritt
+                </span>
+                <span className="text-sm text-text-muted">
+                  Stufe {currentStep + 1} von {PIPELINE_STAGES.length}
+                </span>
+              </div>
+              <Stepper steps={STEPPER_LABELS} current={currentStep} />
+            </CardContent>
+          </Card>
 
-      <DetailSection title="Pipeline">
-        <Field label="Phase">
-          <StageBadge stage={candidate.stage} />
-        </Field>
-        <Field label="Status">
-          <StatusBadge status={candidate.status} />
-        </Field>
-        <Field label="Ablehnungsgrund">
-          {candidate.rejection_reason
-            ? rejectionReasonLabels[candidate.rejection_reason]
-            : "—"}
-        </Field>
-      </DetailSection>
+          {/* Qualification & classification */}
+          <Card>
+            <CardContent className="flex flex-col gap-5">
+              <CardSectionHeader
+                icon={FileText}
+                title="Qualifikation & Klassifizierung"
+              />
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Field label="Qualifikation">
+                  {candidate.nursing_qualification
+                    ? nursingQualificationLabels[candidate.nursing_qualification]
+                    : DASH}
+                </Field>
+                <Field label="Anerkennung Ausland">
+                  {
+                    foreignQualificationRecognitionLabels[
+                      candidate.foreign_qualification_recognition
+                    ]
+                  }
+                </Field>
+                <Field label="Mobilität">
+                  {mobilityLabels[candidate.mobility]}
+                </Field>
+                <Field label="Dokumente">
+                  {candidate.documents_path ? (
+                    <a
+                      href={candidate.documents_path}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-secondary underline-offset-4 hover:underline"
+                    >
+                      <FileText className="size-4" aria-hidden="true" />
+                      Bewerbungsunterlagen (extern)
+                      <ExternalLink className="size-3.5" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    DASH
+                  )}
+                </Field>
+                <Field label="Erstellt">
+                  {formatDate(candidate.created_at.slice(0, 10))}
+                </Field>
+                <Field label="Aktualisiert">
+                  {formatDate(candidate.updated_at.slice(0, 10))}
+                </Field>
+              </dl>
+            </CardContent>
+          </Card>
 
-      <DetailSection title="Team / Wiedervorlage">
-        <Field label="Teamvorschlag">
-          {textValue(candidate.team_proposal)}
-        </Field>
-        <Field label="Team-Feedback">
-          {teamFeedbackStatusLabels[candidate.team_feedback_status]}
-        </Field>
-        <Field label="Nächster Schritt">{textValue(candidate.next_step)}</Field>
-        <Field label="Wiedervorlage">
-          {formatDate(candidate.follow_up_date)}
-        </Field>
-      </DetailSection>
+          {/* Team coordination */}
+          <Card>
+            <CardContent className="flex flex-col gap-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardSectionHeader icon={Users} title="Team-Abstimmung" />
+                <NeutralPill>
+                  {teamFeedbackStatusLabels[candidate.team_feedback_status]}
+                </NeutralPill>
+              </div>
+              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Vorgeschlagenes Team">
+                  {textValue(candidate.team_proposal)}
+                </Field>
+                <Field label="Team-Feedback">
+                  {teamFeedbackStatusLabels[candidate.team_feedback_status]}
+                </Field>
+              </dl>
+            </CardContent>
+          </Card>
 
-      <DetailSection title="Sonstiges">
-        <Field label="Lösch-/Prüfdatum">
-          {formatDate(candidate.deletion_review_date)}
-        </Field>
-        <Field label="Dokumente (Pfad/Link)">
-          {textValue(candidate.documents_path)}
-        </Field>
-        <Field label="Notizen">
-          <span className="whitespace-pre-wrap">
-            {textValue(candidate.notes)}
-          </span>
-        </Field>
-      </DetailSection>
+          {/* Notes */}
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              <span className="font-[family-name:var(--font-heading)] text-[17px] leading-snug font-bold text-foreground">
+                Notizen
+              </span>
+              <p className="text-[15px] whitespace-pre-wrap text-foreground">
+                {textValue(candidate.notes)}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-      <ConsentPanel candidateId={candidate.id} consent={consent} />
+        {/* Right sidebar */}
+        <div className="flex flex-col gap-6">
+          {/* Wiedervorlage */}
+          <Card className="p-0">
+            <div className="h-1 w-full bg-destructive" aria-hidden="true" />
+            <CardContent className="flex flex-col gap-4 py-4">
+              <CardSectionHeader
+                icon={Clock}
+                title="Wiedervorlage"
+                className="[&>span:first-child]:bg-destructive-bg [&>span:first-child]:text-destructive"
+              />
+              <Field label="Nächster Schritt">
+                {textValue(candidate.next_step)}
+              </Field>
+              <div className="flex flex-wrap items-center gap-2">
+                {isSurfacedBucket(followUpBucket) && (
+                  <FollowUpBadge bucket={followUpBucket} />
+                )}
+                <span className="text-sm text-text-secondary tabular-nums">
+                  {candidate.follow_up_date
+                    ? `Fällig ${formatDate(candidate.follow_up_date)}`
+                    : "Keine Wiedervorlage"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
-      <DetailSection title="Metadaten">
-        <Field label="Erstellt">{formatDateTime(candidate.created_at)}</Field>
-        <Field label="Aktualisiert">
-          {formatDateTime(candidate.updated_at)}
-        </Field>
-      </DetailSection>
+          {/* Talentpool consent — real state from Phase 7 (#56) */}
+          <ConsentPanel candidateId={candidate.id} consent={consent} />
+
+          {/* Aufbewahrung / retention */}
+          <Card>
+            <CardContent className="flex flex-col gap-4">
+              <span className="font-[family-name:var(--font-heading)] text-[17px] leading-snug font-bold text-foreground">
+                Aufbewahrung
+              </span>
+              {candidate.deletion_review_date ? (
+                <div className="flex items-start gap-3">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-status-active-bg text-secondary">
+                    <Trash2 className="size-[18px]" aria-hidden="true" />
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <span className="text-sm font-semibold text-foreground">
+                      Prüfdatum: {formatDate(candidate.deletion_review_date)}
+                    </span>
+                    {retention && <Progress value={retention.progress} />}
+                    <span className="text-[13px] text-text-muted">
+                      {retention && retention.daysLeft >= 0
+                        ? `in ${retention.daysLeft} Tagen — danach Anonymisierung`
+                        : "Prüfung fällig — Anonymisierung steht an"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-text-secondary">
+                  Kein Prüfdatum hinterlegt.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
