@@ -2,13 +2,17 @@ import Link from "next/link";
 
 import { CandidateTable } from "@/components/candidates/candidate-table";
 import { Button } from "@/components/ui/button";
+import { resolveToday } from "@/lib/candidates/follow-up";
 import { list } from "@/lib/db/candidates";
 
 // The candidates list. A server component: it loads every row through the
 // RLS-scoped server client (the (app) layout guard ensures a session), then
 // hands them to the client table for search/filter/sort without a round-trip.
+// "Today" is resolved here (Europe/Berlin, server-side) and passed in so the
+// follow-up highlight never depends on the client clock.
 export default async function CandidatesPage() {
   const candidates = await list();
+  const today = resolveToday();
 
   return (
     <div className="flex flex-col gap-6">
@@ -18,7 +22,7 @@ export default async function CandidatesPage() {
         </h1>
         <Button render={<Link href="/candidates/new" />}>Neuer Bewerber</Button>
       </div>
-      <CandidateTable candidates={candidates} />
+      <CandidateTable candidates={candidates} today={today} />
     </div>
   );
 }
