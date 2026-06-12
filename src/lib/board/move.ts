@@ -70,3 +70,55 @@ export function resolveMove(
 
   return { columns: next, stageOrder: insertAt };
 }
+
+export type StageWrite = {
+  id: string;
+  stage: PipelineStage;
+  stage_order: number;
+};
+
+// Plan the persistence for a board move: place the moved card at `toIndex` in
+// the destination column, then renumber the destination (and, for a
+// cross-column move, the source) to a contiguous 0..n sequence. Returns only
+// the rows whose stored `stage` / `stage_order` actually changes, so untouched
+// peers are not rewritten.
+export function planReindex(
+  columns: BoardColumns,
+  id: string,
+  toStage: PipelineStage,
+  toIndex: number,
+): StageWrite[] {
+  const located = locate(columns, id);
+  if (!located) return [];
+  const { card, stage: fromStage } = located;
+
+  const sourceArr = columns[fromStage].filter((c) => c.id !== id);
+  const destBase = toStage === fromStage ? sourceArr : columns[toStage];
+  const insertAt = Math.max(0, Math.min(toIndex, destBase.length));
+  const destArr = [
+    ...destBase.slice(0, insertAt),
+    card,
+    ...destBase.slice(insertAt),
+  ];
+
+  const current = new Map<string, { stage: PipelineStage; order: number }>();
+  for (const stage of PIPELINE_STAGES) {
+    for (const c of columns[stage]) {
+      current.set(c.id, { stage, order: c.stage_order });
+    }
+  }
+
+  const writes: StageWrite[] = [];
+  const consider = (cardId: string, stage: PipelineStage, order: number) => {
+    const cur = current.get(cardId);
+    if (!cur || cur.stage !== stage || cur.order !== order) {
+      writes.push({ id: cardId, stage, stage_order: order });
+    }
+  };
+
+  destArr.forEach((c, index) => consider(c.id, toStage, index));
+  if (toStage !== fromStage) {
+    sourceArr.forEach((c, index) => consider(c.id, fromStage, index));
+  }
+  return writes;
+}
