@@ -35,6 +35,14 @@
   /* Hero-Overlay */
   --color-hero-overlay: rgba(45, 127, 131, 0.92);
 
+  /* Chart series — alias the brand palette so dashboard charts stay on-brand
+     and token-driven (shadcn --chart-* convention, principle 8). */
+  --chart-1: var(--color-secondary);
+  --chart-2: var(--color-primary);
+  --chart-3: var(--color-secondary-light);
+  --chart-4: var(--color-cta);
+  --chart-5: var(--color-cta-decorative);
+
   /* Spacing (8pt Grid) */
   --space-1: 4px;
   --space-2: 8px;
