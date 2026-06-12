@@ -40,6 +40,12 @@ export default async function AppLayout({
               >
                 Bewerber
               </Link>
+              <Link
+                href="/board"
+                className="text-[var(--color-text-secondary)] transition-colors hover:text-[var(--color-primary)]"
+              >
+                Pipeline
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-4">
