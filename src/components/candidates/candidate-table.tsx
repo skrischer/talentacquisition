@@ -3,9 +3,22 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronDown, LayoutGrid, List, MoreVertical } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
+import { Avatar } from "@/components/ui/avatar";
+import { CountBadge } from "@/components/ui/count-badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Pagination,
+  PaginationNext,
+  PaginationPage,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import {
   Table,
   TableBody,
@@ -17,48 +30,23 @@ import {
 import { bucketFor, isSurfacedBucket } from "@/lib/candidates/follow-up";
 import {
   applicationSourceLabels,
+  applicationSourceOptions,
   candidatePriorityOptions,
-  candidateStatusLabels,
   candidateStatusOptions,
-  pipelineStageLabels,
+  nursingQualificationLabels,
+  pipelineStageOptions,
 } from "@/lib/candidates/labels";
 import type { Candidate } from "@/lib/db/candidates";
+import { cn } from "@/lib/utils";
 
-import { FollowUpBadge } from "./follow-up-badge";
 import { PriorityBadge } from "./priority-badge";
 import { StageBadge } from "./stage-badge";
 import { StatusBadge } from "./status-badge";
 
-type SortKey =
-  | "name"
-  | "source"
-  | "stage"
-  | "status"
-  | "priority"
-  | "follow_up_date";
+const PAGE_SIZE = 8;
 
-type SortDir = "asc" | "desc";
-
-// Returns the comparison key for a column, or null when the row has no value
-// for it (priority / follow-up); the comparator keeps nulls last in both
-// directions.
-function sortValue(candidate: Candidate, key: SortKey): string | null {
-  switch (key) {
-    case "name":
-      return `${candidate.last_name} ${candidate.first_name}`.toLowerCase();
-    case "source":
-      return applicationSourceLabels[
-        candidate.application_source
-      ].toLowerCase();
-    case "stage":
-      return pipelineStageLabels[candidate.stage].toLowerCase();
-    case "status":
-      return candidateStatusLabels[candidate.status].toLowerCase();
-    case "priority":
-      return candidate.priority;
-    case "follow_up_date":
-      return candidate.follow_up_date;
-  }
+function initials(candidate: Candidate): string {
+  return `${candidate.first_name[0] ?? ""}${candidate.last_name[0] ?? ""}`;
 }
 
 function formatDate(value: string | null): string {
@@ -67,10 +55,9 @@ function formatDate(value: string | null): string {
   return year && month && day ? `${day}.${month}.${year}` : value;
 }
 
-// The follow-up cell: the formatted date, emphasised and badged when the row is
-// due. Classification comes from the same `bucketFor` the dashboard card uses —
-// one source, no second date parse — and the inline guard narrows the bucket so
-// only surfaced values reach the badge.
+// The follow-up cell: the formatted date, emphasised in the destructive tone
+// when overdue / due today. Classification reuses the same `bucketFor` the
+// dashboard card uses — one source, no second date parse.
 function FollowUpDateCell({
   followUpDate,
   today,
@@ -80,60 +67,97 @@ function FollowUpDateCell({
 }) {
   const bucket = bucketFor(followUpDate, today);
   const surfaced = isSurfacedBucket(bucket);
+  const overdueOrToday = bucket === "overdue" || bucket === "due_today";
   return (
-    <div className="flex items-center gap-2">
-      <span
-        className={
-          surfaced
+    <span
+      className={
+        overdueOrToday
+          ? "font-semibold text-destructive"
+          : surfaced
             ? "font-medium text-[var(--color-text)]"
-            : "text-text-secondary"
-        }
-      >
-        {formatDate(followUpDate)}
-      </span>
-      {isSurfacedBucket(bucket) && <FollowUpBadge bucket={bucket} />}
-    </div>
+            : "text-text-muted"
+      }
+    >
+      {bucket === "due_today" ? "Heute" : formatDate(followUpDate)}
+    </span>
   );
 }
 
-const controlClass =
-  "h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm outline-none transition-colors hover:border-[var(--color-border-hover)] focus-visible:border-[var(--color-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--color-secondary)] focus-visible:outline-offset-2";
-
-function SortHeader({
+// A multi-select filter chip: a token-styled trigger that opens a checkbox menu
+// and carries a count badge once at least one option is picked. Items keep the
+// menu open on click (`closeOnClick={false}`) so several values can be toggled
+// in one pass.
+function FilterDropdown<T extends string>({
   label,
-  columnKey,
-  activeKey,
-  direction,
-  onToggle,
+  options,
+  selected,
+  onChange,
 }: {
   label: string;
-  columnKey: SortKey;
-  activeKey: SortKey | null;
-  direction: SortDir;
-  onToggle: (key: SortKey) => void;
+  options: readonly { value: T; label: string }[];
+  selected: Set<T>;
+  onChange: (next: Set<T>) => void;
 }) {
-  const active = activeKey === columnKey;
-  const Icon = !active
-    ? ChevronsUpDown
-    : direction === "asc"
-      ? ArrowUp
-      : ArrowDown;
+  function toggle(value: T) {
+    const next = new Set(selected);
+    if (next.has(value)) next.delete(value);
+    else next.add(value);
+    onChange(next);
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => onToggle(columnKey)}
-      className="inline-flex cursor-pointer items-center gap-1 font-medium text-text-secondary transition-colors hover:text-[var(--color-text)]"
-      aria-label={`Nach ${label} sortieren`}
-    >
-      {label}
-      <Icon
-        className={
-          active
-            ? "size-3.5 text-[var(--color-primary)]"
-            : "size-3.5 opacity-50"
-        }
-      />
-    </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          "flex h-9 cursor-pointer items-center gap-2 rounded-[var(--radius-sm)] border border-border bg-card px-3 text-sm font-medium text-foreground outline-none transition-colors hover:border-[var(--color-border-hover)] focus-visible:ring-2 focus-visible:ring-secondary data-[popup-open]:border-secondary",
+          selected.size > 0 && "border-secondary",
+        )}
+      >
+        {label}
+        {selected.size > 0 && (
+          <CountBadge tone="primary">{selected.size}</CountBadge>
+        )}
+        <ChevronDown className="size-4 text-text-secondary" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {options.map((option) => {
+          const checked = selected.has(option.value);
+          return (
+            <DropdownMenuItem
+              key={option.value}
+              closeOnClick={false}
+              onClick={() => toggle(option.value)}
+              className="justify-between"
+            >
+              {option.label}
+              <span className="flex size-4 shrink-0 items-center justify-center text-secondary">
+                {checked && <Check className="size-4" />}
+              </span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+// The Liste / Board view toggle: a segmented control. Liste is the current
+// route; Board links to the pipeline board.
+function ViewToggle() {
+  return (
+    <div className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] border border-border bg-bg-subtle p-1">
+      <span className="inline-flex items-center gap-1.5 rounded-[7px] bg-card px-3 py-1.5 text-[13px] font-semibold text-foreground shadow-[var(--shadow-sm)]">
+        <List className="size-4" />
+        Liste
+      </span>
+      <Link
+        href="/board"
+        className="inline-flex items-center gap-1.5 rounded-[7px] px-3 py-1.5 text-[13px] font-semibold text-text-secondary transition-colors hover:text-foreground"
+      >
+        <LayoutGrid className="size-4" />
+        Board
+      </Link>
+    </div>
   );
 }
 
@@ -147,218 +171,189 @@ export function CandidateTable({
   initialSearch?: string;
 }) {
   const [search, setSearch] = useState(initialSearch);
-  // Filter values are plain strings ("" = all) so the native <select> onChange
-  // needs no enum cast; comparing an enum column to the string is sound.
-  const [statusFilter, setStatusFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  // "Nur fällige": keep only rows whose follow-up bucket is surfaced (overdue /
-  // due_today / due_this_week), AND-composed with the filters above.
-  const [onlyDue, setOnlyDue] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [stageFilter, setStageFilter] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<Set<string>>(new Set());
+  const [priorityFilter, setPriorityFilter] = useState<Set<string>>(new Set());
+  const [sourceFilter, setSourceFilter] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
 
+  // All active filters are AND-composed; within a filter the picked values are
+  // OR-ed (a row matches if its value is among the selected). An empty set means
+  // "all".
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const filtered = candidates.filter((candidate) => {
-      const matchesName =
+    return candidates.filter((candidate) => {
+      const matchesQuery =
         query === "" ||
         `${candidate.first_name} ${candidate.last_name}`
           .toLowerCase()
-          .includes(query);
+          .includes(query) ||
+        (candidate.email?.toLowerCase().includes(query) ?? false);
+      const matchesStage =
+        stageFilter.size === 0 || stageFilter.has(candidate.stage);
       const matchesStatus =
-        statusFilter === "" || candidate.status === statusFilter;
+        statusFilter.size === 0 || statusFilter.has(candidate.status);
       const matchesPriority =
-        priorityFilter === "" || candidate.priority === priorityFilter;
-      const matchesDue =
-        !onlyDue ||
-        isSurfacedBucket(bucketFor(candidate.follow_up_date, today));
-      return matchesName && matchesStatus && matchesPriority && matchesDue;
-    });
-
-    if (!sortKey) return filtered;
-    const direction = sortDir === "asc" ? 1 : -1;
-    return [...filtered].sort((a, b) => {
-      const left = sortValue(a, sortKey);
-      const right = sortValue(b, sortKey);
-      // Rows missing a value sort last regardless of direction.
-      if (left === null && right === null) return 0;
-      if (left === null) return 1;
-      if (right === null) return -1;
-      return left.localeCompare(right, "de") * direction;
+        priorityFilter.size === 0 ||
+        (candidate.priority !== null && priorityFilter.has(candidate.priority));
+      const matchesSource =
+        sourceFilter.size === 0 ||
+        sourceFilter.has(candidate.application_source);
+      return (
+        matchesQuery &&
+        matchesStage &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesSource
+      );
     });
   }, [
     candidates,
     search,
+    stageFilter,
     statusFilter,
     priorityFilter,
-    onlyDue,
-    today,
-    sortKey,
-    sortDir,
+    sourceFilter,
   ]);
 
-  function toggleSort(key: SortKey) {
-    if (sortKey === key) {
-      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(key);
-    setSortDir("asc");
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const pageRows = rows.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+  const firstRow = rows.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const lastRow = Math.min(currentPage * PAGE_SIZE, rows.length);
+
+  const isFiltered =
+    search !== "" ||
+    stageFilter.size > 0 ||
+    statusFilter.size > 0 ||
+    priorityFilter.size > 0 ||
+    sourceFilter.size > 0;
+
+  // A filter change can shrink the result set below the current page; snap back
+  // to page 1 whenever a filter or the search mutates.
+  function withReset<T>(setter: (value: T) => void) {
+    return (value: T) => {
+      setter(value);
+      setPage(1);
+    };
   }
 
   function reset() {
     setSearch("");
-    setStatusFilter("");
-    setPriorityFilter("");
-    setOnlyDue(false);
+    setStageFilter(new Set());
+    setStatusFilter(new Set());
+    setPriorityFilter(new Set());
+    setSourceFilter(new Set());
+    setPage(1);
   }
-
-  const isFiltered =
-    search !== "" || statusFilter !== "" || priorityFilter !== "" || onlyDue;
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Toolbar: a mobile-only search, the filter chips + Zuruecksetzen, and
+          the Liste/Board toggle. */}
       <div className="flex flex-wrap items-center gap-3">
-        <Input
+        <input
           type="search"
           value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Name suchen"
-          className="h-9 max-w-xs py-0"
-          aria-label="Bewerber nach Name suchen"
+          onChange={(event) => withReset(setSearch)(event.target.value)}
+          placeholder="Name, E-Mail ..."
+          aria-label="Bewerber suchen"
+          className="h-9 w-full rounded-[var(--radius-sm)] border border-border bg-card px-3 text-sm outline-none transition-colors hover:border-[var(--color-border-hover)] focus-visible:border-secondary focus-visible:ring-2 focus-visible:ring-secondary md:hidden"
         />
-        <select
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-          className={controlClass}
-          aria-label="Nach Status filtern"
-        >
-          <option value="">Alle Status</option>
-          {candidateStatusOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={priorityFilter}
-          onChange={(event) => setPriorityFilter(event.target.value)}
-          className={controlClass}
-          aria-label="Nach Priorität filtern"
-        >
-          <option value="">Alle Prioritäten</option>
-          {candidatePriorityOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
-          <input
-            type="checkbox"
-            checked={onlyDue}
-            onChange={(event) => setOnlyDue(event.target.checked)}
-            className="size-4 accent-[var(--color-secondary)]"
-          />
-          Nur fällige Wiedervorlagen
-        </label>
+        <FilterDropdown
+          label="Phase"
+          options={pipelineStageOptions}
+          selected={stageFilter}
+          onChange={withReset(setStageFilter)}
+        />
+        <FilterDropdown
+          label="Status"
+          options={candidateStatusOptions}
+          selected={statusFilter}
+          onChange={withReset(setStatusFilter)}
+        />
+        <FilterDropdown
+          label="Priorität"
+          options={candidatePriorityOptions}
+          selected={priorityFilter}
+          onChange={withReset(setPriorityFilter)}
+        />
+        <FilterDropdown
+          label="Quelle"
+          options={applicationSourceOptions}
+          selected={sourceFilter}
+          onChange={withReset(setSourceFilter)}
+        />
         {isFiltered && (
           <button
             type="button"
             onClick={reset}
-            className="cursor-pointer text-sm text-[var(--color-secondary)] underline-offset-4 hover:underline"
+            className="cursor-pointer text-sm font-medium text-secondary underline-offset-4 hover:underline"
           >
             Zurücksetzen
           </button>
         )}
-        <span className="ml-auto text-sm text-text-muted">
-          {rows.length} von {candidates.length}
-        </span>
+        <div className="ml-auto">
+          <ViewToggle />
+        </div>
       </div>
 
-      <div className="rounded-[var(--radius-md)] border border-border bg-[var(--color-card)]">
+      {/* Desktop: table card. */}
+      <div className="hidden rounded-[var(--radius-md)] border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>
-                <SortHeader
-                  label="Name"
-                  columnKey="name"
-                  activeKey={sortKey}
-                  direction={sortDir}
-                  onToggle={toggleSort}
-                />
-              </TableHead>
-              <TableHead>
-                <SortHeader
-                  label="Quelle"
-                  columnKey="source"
-                  activeKey={sortKey}
-                  direction={sortDir}
-                  onToggle={toggleSort}
-                />
-              </TableHead>
-              <TableHead>
-                <SortHeader
-                  label="Phase"
-                  columnKey="stage"
-                  activeKey={sortKey}
-                  direction={sortDir}
-                  onToggle={toggleSort}
-                />
-              </TableHead>
-              <TableHead>
-                <SortHeader
-                  label="Status"
-                  columnKey="status"
-                  activeKey={sortKey}
-                  direction={sortDir}
-                  onToggle={toggleSort}
-                />
-              </TableHead>
-              <TableHead>
-                <SortHeader
-                  label="Priorität"
-                  columnKey="priority"
-                  activeKey={sortKey}
-                  direction={sortDir}
-                  onToggle={toggleSort}
-                />
-              </TableHead>
-              <TableHead>
-                <SortHeader
-                  label="Wiedervorlage"
-                  columnKey="follow_up_date"
-                  activeKey={sortKey}
-                  direction={sortDir}
-                  onToggle={toggleSort}
-                />
-              </TableHead>
+              <TableHead>Bewerber</TableHead>
+              <TableHead>Quelle</TableHead>
+              <TableHead>Qualifikation</TableHead>
+              <TableHead>Phase</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Prio</TableHead>
+              <TableHead>Wiedervorlage</TableHead>
+              <TableHead className="w-12" aria-label="Aktionen" />
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.length === 0 ? (
+            {pageRows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
-                  className="py-8 text-center text-text-muted"
+                  colSpan={8}
+                  className="py-10 text-center text-text-muted"
                 >
                   Keine Bewerber gefunden.
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((candidate) => (
+              pageRows.map((candidate) => (
                 <TableRow key={candidate.id}>
                   <TableCell>
-                    <Link
-                      href={`/candidates/${candidate.id}`}
-                      className="font-medium text-[var(--color-primary)] hover:underline"
-                    >
-                      {candidate.last_name}, {candidate.first_name}
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Avatar size="sm" initials={initials(candidate)} />
+                      <div className="flex flex-col">
+                        <Link
+                          href={`/candidates/${candidate.id}`}
+                          className="font-semibold text-foreground hover:text-secondary hover:underline"
+                        >
+                          {candidate.first_name} {candidate.last_name}
+                        </Link>
+                        <span className="text-[13px] text-text-muted">
+                          {candidate.email ?? candidate.phone ?? "—"}
+                        </span>
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell className="text-text-secondary">
                     {applicationSourceLabels[candidate.application_source]}
+                  </TableCell>
+                  <TableCell className="text-text-secondary">
+                    {candidate.nursing_qualification
+                      ? nursingQualificationLabels[
+                          candidate.nursing_qualification
+                        ]
+                      : "—"}
                   </TableCell>
                   <TableCell>
                     <StageBadge stage={candidate.stage} />
@@ -367,11 +362,7 @@ export function CandidateTable({
                     <StatusBadge status={candidate.status} />
                   </TableCell>
                   <TableCell>
-                    {candidate.priority ? (
-                      <PriorityBadge priority={candidate.priority} />
-                    ) : (
-                      <span className="text-text-muted">—</span>
-                    )}
+                    <PriorityBadge priority={candidate.priority} />
                   </TableCell>
                   <TableCell>
                     <FollowUpDateCell
@@ -379,11 +370,108 @@ export function CandidateTable({
                       today={today}
                     />
                   </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        className="flex size-8 cursor-pointer items-center justify-center rounded-[var(--radius-sm)] text-text-secondary outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-secondary"
+                        aria-label="Aktionen"
+                      >
+                        <MoreVertical className="size-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem
+                          render={<Link href={`/candidates/${candidate.id}`} />}
+                        >
+                          Öffnen
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          render={
+                            <Link href={`/candidates/${candidate.id}/edit`} />
+                          }
+                        >
+                          Bearbeiten
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile: stacked cards. */}
+      <div className="flex flex-col gap-3 md:hidden">
+        {pageRows.length === 0 ? (
+          <p className="rounded-[var(--radius-md)] border border-border bg-card py-10 text-center text-text-muted">
+            Keine Bewerber gefunden.
+          </p>
+        ) : (
+          pageRows.map((candidate) => (
+            <Link
+              key={candidate.id}
+              href={`/candidates/${candidate.id}`}
+              className="flex flex-col gap-3 rounded-[var(--radius-md)] border border-border bg-card p-4 transition-colors hover:border-[var(--color-border-hover)]"
+            >
+              <div className="flex items-start gap-3">
+                <Avatar initials={initials(candidate)} />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate font-semibold text-foreground">
+                    {candidate.first_name} {candidate.last_name}
+                  </span>
+                  <span className="truncate text-[13px] text-text-muted">
+                    {candidate.email ?? candidate.phone ?? "—"}
+                  </span>
+                </div>
+                <PriorityBadge priority={candidate.priority} />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <StageBadge stage={candidate.stage} />
+                <StatusBadge status={candidate.status} />
+              </div>
+              <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-sm">
+                <span className="truncate text-text-secondary">
+                  {candidate.next_step ?? "Kein nächster Schritt"}
+                </span>
+                <FollowUpDateCell
+                  followUpDate={candidate.follow_up_date}
+                  today={today}
+                />
+              </div>
+            </Link>
+          ))
+        )}
+      </div>
+
+      {/* Footer: result range + client-side pagination. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-sm text-text-muted">
+          {firstRow}–{lastRow} von {rows.length} Bewerbern
+        </span>
+        {pageCount > 1 && (
+          <Pagination>
+            <PaginationPrevious
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage === 1}
+            />
+            {Array.from({ length: pageCount }, (_, index) => index + 1).map(
+              (number) => (
+                <PaginationPage
+                  key={number}
+                  active={number === currentPage}
+                  onClick={() => setPage(number)}
+                >
+                  {number}
+                </PaginationPage>
+              ),
+            )}
+            <PaginationNext
+              onClick={() => setPage((value) => Math.min(pageCount, value + 1))}
+              disabled={currentPage === pageCount}
+            />
+          </Pagination>
+        )}
       </div>
     </div>
   );
