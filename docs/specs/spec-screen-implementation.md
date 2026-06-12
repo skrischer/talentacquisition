@@ -27,17 +27,21 @@ actions over existing columns.
       priority / search; **client-side pagination**; the Liste / Board toggle.
 - [ ] **Candidate detail** — identity card (badges + contact grid), the 7-stage
       pipeline **stepper**, the qualification / team / notes sections, and the
-      right sidebar (Wiedervorlage, Talentpool, Aufbewahrung cards).
+      right sidebar (Wiedervorlage, Aufbewahrung, and the Talentpool card — the
+      latter shows real consent state only once Phase 7 lands, an empty state
+      until then).
 - [ ] **Candidate form** — sectioned cards using the Phase-9 controls; the
       **email-or-phone-required** rule (at least one of email / phone) is enforced
       via zod with a German message; the rejection-reason biconditional
       (constitution principle 1) is preserved.
 - [ ] **Pipeline board** — stage columns (desktop) / stage-selector + single
       column (mobile), reusing the Phase-4 drag-and-persist engine unchanged.
-- [ ] **Dashboard** — the KPI **stat row** (active A-candidates, month-over-month
-      delta, eingestellt, rejection rate — derived from the existing Phase-6
-      views, no new trend), the Phase-6 chart, the Wiedervorlage card, the
-      distribution cards, and the Phase-7 "Löschprüfung fällig" card slotted in.
+- [ ] **Dashboard** — restyle the existing `src/app/(app)/page.tsx` to the screen:
+      the KPI **stat row** (active A-candidates, month-over-month delta,
+      eingestellt, rejection rate — from the existing Phase-6 views / KPI cards,
+      deriving any missing figure with no new SQL), the shipped Phase-6 chart and
+      distribution cards, the Wiedervorlage card, and — gated on Phase 7 (#56) —
+      the "Löschprüfung fällig" card.
 - [ ] **Wiedervorlage page** — grouped sections (Überfällig / Heute fällig /
       Diese Woche) over the Phase-5 bucket utility, each row with **Erledigt**
       (clears `next_step` + `follow_up_date`) and **Verschieben** (sets a new
@@ -94,19 +98,27 @@ actions over existing columns.
 
 Reference `docs/constitution.md` rather than restating it.
 
-- **Depends on Phase 9 and on the functional pages.** Phase 9 (#90–#95) supplies
-  the tokens + component library. Phases 1 (shell / auth), 3 (list / detail /
-  form), 4 (board) are **done** (specs archived) — their pages are restyled here.
-  Phases 5 (follow-up util), 6 (KPI views / chart), 7 (retention card) are **in
-  progress**; the Wiedervorlage page, the dashboard, and the retention card wait
-  on those milestones.
+- **Depends on Phase 9; most functional pages already exist.** Phase 9 (#90–#95)
+  supplies the tokens + component library. Phases 1 (shell / auth), 3 (list /
+  detail / form), 4 (board), **5 (follow-up bucket utility), and 6 (KPI views /
+  chart / dashboard)** are **done** (milestones closed, specs archived) — their
+  pages and modules already ship and are **restyled / extended** here, not built
+  from scratch. The dashboard already lives at `src/app/(app)/page.tsx` (Phase-6
+  chart + `components/dashboard/*` KPI cards + the Phase-5 follow-up card) and the
+  app shell at `src/app/(app)/layout.tsx`. **Only Phase 7 (talent-pool consent &
+  retention) is still in progress**, so the dashboard "Löschprüfung fällig" card
+  and the detail Talentpool consent card are the only pieces gated on an open
+  milestone (#56).
 - **No migration.** Erledigt / Verschieben and email-or-phone are server-action /
   validation changes over existing columns; the stat-row reads existing views.
-- **Reuse, do not fork.** Extend the existing pages, components, server actions
-  (`candidate-table.tsx`, `candidate-form.tsx`, `lib/candidates/actions.ts`,
-  the board), not parallel copies. The list filters extend the Phase-3 table;
-  Erledigt / Verschieben are new actions over the existing column pair; the nav
-  count and the Wiedervorlage page reuse the Phase-5 bucket utility.
+- **Reuse, do not fork.** Extend the existing routes / components / server
+  actions — the app shell `src/app/(app)/layout.tsx`, the dashboard
+  `src/app/(app)/page.tsx` (chart + `components/dashboard/*` KPI cards +
+  follow-up card), `candidate-table.tsx`, `candidate-form.tsx`,
+  `lib/candidates/actions.ts`, and the board — not parallel copies. The list
+  filters extend the Phase-3 table; Erledigt / Verschieben are new actions over
+  the existing column pair; the nav adds the missing Wiedervorlage link + count,
+  reusing the shipped Phase-5 bucket utility (`src/lib/candidates/follow-up.ts`).
 - **Responsive** to the two Paper breakpoints (table → card, sidebar → bottom-tab,
   board columns → stage-selector); the Phase-9 components carry the adaptivity.
 - Match the Paper screens via Paper MCP `get_jsx` / `get_computed_styles`;
@@ -132,6 +144,7 @@ Reference `docs/constitution.md` rather than restating it.
 | Mobile nav = bottom-tab bar; desktop = sidebar | The final Paper screens; the two are distinct compositions of the same Phase-9 primitives | 2026-06-12 |
 | The Phase-9-deferred German label copy (`active` → "In Bearbeitung", `rejected` → "Abgesagt") is reconciled here | It is page-facing copy in a shared module rendered by these pages | 2026-06-12 |
 | Erledigt clears `next_step` + `follow_up_date`; Verschieben sets a new `follow_up_date` (no snooze table, no task model) | Architecture "Later (not MVP)"; matches the Phase-5 reschedule-by-editing decision | 2026-06-12 |
+| OPEN — slot the Phase-7-gated "Löschprüfung fällig" dashboard card and the detail Talentpool consent card now (a cross-milestone `Depends on #56` edge), or defer them to a Phase-10 follow-up after Phase 7 closes? | resolved at the spec-acceptance gate | — |
 
 ## Tracking
 
@@ -171,7 +184,7 @@ Each issue references this spec path in its body.
 | Risk | Mitigation |
 |---|---|
 | Dashboard double-owned with Phase 6 | Explicit split (Phase 6 = views + chart + distribution; Phase 10 = composition + stat row + restyle) in Prior decisions |
-| Rebuilding a page that its functional phase (5/6/7) has not finished | Cross-milestone `Depends on` edges; the implement loop only picks unblocked issues |
+| Restyling a surface whose data phase is unfinished | Phases 1/3/4/5/6 are done; only the retention / Talentpool cards wait on Phase 7 via a cross-milestone `Depends on #56` edge — the rest are restyles of shipped pages |
 | Restyle silently changes behaviour | The functional deltas are explicit issues with their own acceptance; pure-restyle issues assert "no behaviour change" |
 | Pixel-matching drift from the final design | Pull exact values via Paper MCP `get_jsx` / `get_computed_styles`; screenshots diffed at the QA gate |
 | Responsive gaps (only desktop built) | Every screen issue has a mobile acceptance item; the Phase-9 components carry adaptivity |
@@ -184,5 +197,14 @@ Each issue references this spec path in its body.
   Wiedervorlage screen and 5 mobile screens, so responsive and the functional
   deltas are first-class scope. Boundaries to Phases 4/5/6/7 fixed in Prior
   decisions; the dashboard split and the email-or-phone rule recorded as
-  decisions (roadmap-determined). No genuinely-open decision identified at draft
-  time — to be confirmed at the review gate.
+  decisions (roadmap-determined).
+- 2026-06-12: Review gate (in-session agent) — corrected a stale phase-status
+  model: Phases 1/3/4/5/6 are **done** (milestones #1–#6 closed, specs archived),
+  so the dashboard (`(app)/page.tsx`, with the Phase-6 chart / KPI cards and the
+  Phase-5 follow-up card) and the Wiedervorlage surfaces are **restyles of shipped
+  pages**, not compositions gated on open milestones; **only Phase 7** is in
+  progress. Named the dashboard page + app-shell `layout.tsx` in the
+  extend-don't-fork list and fixed the dashboard route path (`(app)/page.tsx`, not
+  `(app)/dashboard`). Surfaced one genuinely-open decision for the gate: slot the
+  Phase-7-gated Löschprüfung / Talentpool cards now (`Depends on #56`) or defer
+  them to a Phase-10 follow-up.
