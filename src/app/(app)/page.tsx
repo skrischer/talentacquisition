@@ -7,6 +7,7 @@ import {
   ApplicationsPerMonthCard,
   RejectionsByReasonCard,
 } from "@/components/dashboard/kpi-cards";
+import { DeletionReviewCard } from "@/components/dashboard/deletion-review-card";
 import { FollowUpCard } from "@/components/dashboard/follow-up-card";
 import { getDashboardKpis } from "@/lib/db/kpis";
 
@@ -27,6 +28,9 @@ export default async function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <div className="md:col-span-2 xl:col-span-3">
           <FollowUpCard />
+        </div>
+        <div className="md:col-span-2 xl:col-span-3">
+          <DeletionReviewCard />
         </div>
         <div className="md:col-span-2 xl:col-span-3">
           <ApplicationsPerMonthCard data={kpis.applicationsPerMonth} />
