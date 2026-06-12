@@ -24,7 +24,8 @@ export async function createCandidate(
   try {
     const candidate = await create(parsed.data);
     id = candidate.id;
-  } catch {
+  } catch (error) {
+    console.error("createCandidate failed:", error);
     return { error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
   }
 
@@ -43,7 +44,8 @@ export async function updateCandidate(
 
   try {
     await update(id, parsed.data);
-  } catch {
+  } catch (error) {
+    console.error("updateCandidate failed:", error);
     return { error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
   }
 
