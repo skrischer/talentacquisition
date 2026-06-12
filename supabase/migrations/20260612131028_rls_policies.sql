@@ -16,14 +16,14 @@ alter table public.talent_pool_consent enable row level security;
 grant select, insert, update, delete on public.candidate to authenticated;
 grant select, insert, update, delete on public.talent_pool_consent to authenticated;
 
-create policy "authenticated full access"
+create policy "candidate: authenticated full access"
   on public.candidate
   for all
   to authenticated
   using (true)
   with check (true);
 
-create policy "authenticated full access"
+create policy "talent_pool_consent: authenticated full access"
   on public.talent_pool_consent
   for all
   to authenticated
