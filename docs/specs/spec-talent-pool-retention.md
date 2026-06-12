@@ -1,6 +1,6 @@
 # Spec: Talent-pool consent & retention (Phase 7)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-12
 
 The MVP closer. It wires the explicit talent-pool **consent** record (the
@@ -29,8 +29,8 @@ determining retention periods (a vision non-goal).
       performs no destructive action on its own.
 - [ ] A recruiter sees the due-for-review candidates (a dashboard "Löschprüfung"
       card + a review list) and resolves each: extend the review date (Phase 3
-      form), mark reviewed/keep, or remove the candidate per the gate-decided
-      removal action.
+      form), mark reviewed/keep, or anonymize the candidate (PII scrubbed, the enum
+      columns + `created_at` retained so Phase 6 KPIs are unaffected — principle 7).
 - [ ] `deletion_review_date` stays recruiter-set (the Phase 3 form already edits
       it); Phase 7 does not auto-derive a retention period — legal periods stay
       parked (vision non-goal).
@@ -91,9 +91,13 @@ determining retention periods (a vision non-goal).
   - **mark reviewed / keep** — sets `resolved_at = now()`, `resolution = 'keep'` on
     the queue row; the row is **retained for audit** (soft-resolution), it just
     leaves the unresolved list.
-  - **remove** the candidate per the gate decision (hard-delete or anonymize) —
-    sets `resolution = 'removed'`. This manual removal is the hard-delete that
-    Phase 3 explicitly deferred to Phase 7.
+  - **anonymize** the candidate (the gate-decided removal action) — a server action
+    overwrites the PII fields (`first_name`, `last_name`, `email`, `phone`, `notes`,
+    `team_proposal`, `documents_path`) with fixed placeholders, removes/voids any
+    `talent_pool_consent` row, and sets `resolution = 'removed'`; the enum columns
+    and `created_at` are retained so Phase 6 KPIs are unaffected (principle 7). This
+    is the data-removal capability Phase 3 explicitly deferred to Phase 7 — realized
+    as anonymization rather than a hard row delete.
 
   All resolutions are server actions through the RLS-scoped client.
 
@@ -148,9 +152,11 @@ Reference `docs/constitution.md` rather than restating it.
 
 - [ ] Enable the **`pg_cron`** extension on the Supabase project (Dashboard →
       Database → Extensions → `pg_cron`, or `create extension if not exists
-      pg_cron;`). Required before the retention-scan schedule (the `cron.schedule`
-      call) can run. No other secret, provisioning, or account is needed; **no
-      service-role key**.
+      pg_cron;`). Required before the retention-scan schedule (migration 7b, the
+      `cron.schedule` call) activates; migration 7a applies without it and 7b is a
+      guarded no-op until it is enabled. **Confirmed at the gate: the user enables
+      `pg_cron` before the retention issues are implemented.** No other secret,
+      provisioning, or account is needed; **no service-role key**.
 
 ## Prior decisions
 
@@ -164,7 +170,7 @@ Reference `docs/constitution.md` rather than restating it.
 | Consent recorded by the recruiter out-of-band; no candidate-facing flow | Vision non-goals: no candidate login, no automated candidate email | 2026-06-12 |
 | Diverge from the Phase 2 spec's anticipated service-role retention client — use in-DB pg_cron instead | Ships no service-role key (principle 6), keeps retention logic in SQL next to the data; the Phase 2 spec deferred the mechanism to this phase. The Phase 7 implementation reconciles the now-superseded "service-role (retention job) bypasses RLS" wording in `spec-data-model.md` (its RLS + Risks sections) so the archived design stays accurate | 2026-06-12 |
 | Surfacing = a dashboard "Löschprüfung" card + a review list | Mirrors the Phase 5 Wiedervorlage / Phase 6 KPI dashboard-card pattern (reuse) | 2026-06-12 |
-| OPEN — removal action when a recruiter resolves a due candidate: **hard-delete** the row vs. **anonymize** (scrub the PII fields — name/email/phone/notes/team_proposal — keep the row with its enum columns + `created_at`) | The deciding criterion is **KPI continuity (principle 7)**: Phase 6's aggregate views count `candidate` rows, so a hard-delete permanently shrinks the historical KPIs (applications per month, by source, …) for removed candidates, whereas anonymize (prior-art §4 frappe blueprint) keeps the row's non-PII columns so the KPIs stay accurate. Hard-delete is the simpler, strongest-erasure posture; anonymize is the principle-7-preserving option. Resolved at the spec-acceptance gate | — |
+| Removal action = **anonymize**: scrub the PII fields (`first_name`, `last_name`, `email`, `phone`, `notes`, `team_proposal`, `documents_path`) to fixed placeholders, keep the row with its enum columns + `created_at`; mark it anonymized (e.g. `resolution = 'removed'` on the queue row). The talent_pool consent row, if any, is removed/voided with the PII | Decided at the spec-acceptance gate. KPI continuity (principle 7) is the deciding criterion: Phase 6's aggregate views count `candidate` rows, so anonymize keeps the non-PII columns and the historical KPIs (applications per month, by source, …) stay accurate, while still erasing the personal data (GDPR-sound, prior-art §4 frappe blueprint) | 2026-06-12 |
 
 ## Tracking
 
@@ -201,9 +207,11 @@ Each issue references this spec path in its body.
 - [ ] The dashboard card + review list show the due candidates; resolving by
       extending the date removes the row from the queue on the next scan, marking
       reviewed clears it, and removing applies the gate-decided action.
-- [ ] (If hard-delete) removing a candidate cascades its consent + queue rows; (if
-      anonymize) the PII fields are scrubbed while the enum columns and `created_at`
-      are retained, so Phase 6 KPIs over that row are unchanged.
+- [ ] Anonymizing a candidate overwrites every PII field (`first_name`,
+      `last_name`, `email`, `phone`, `notes`, `team_proposal`, `documents_path`)
+      with placeholders and removes/voids its `talent_pool_consent` row, while the
+      enum columns and `created_at` are retained — re-running the Phase 6 KPI views
+      yields the same counts as before the anonymization.
 - [ ] No service-role key appears in app code or the client bundle; the retention
       job runs in-DB under pg_cron.
 
@@ -211,9 +219,10 @@ Each issue references this spec path in its body.
 
 | Risk | Mitigation |
 |---|---|
-| `pg_cron` not enabled → the schedule fails | Human prerequisite delivered/confirmed at the gate; the retention-scan issue is parked `blocked:human` if it is not |
+| `pg_cron` not enabled when 7b runs | 7b is `pg_extension`-guarded, so it is a clean no-op (no migration failure); the schedule simply stays inactive until the user enables `pg_cron` (confirmed at the gate, before the retention issues are implemented) |
 | The cross-table consent triggers block legitimate edits or are hard to reason about | Triggers are scoped to `status` changes and to consent accept/delete only; every direction is covered by an explicit Verification case |
-| Hard-delete loses KPI history for removed candidates | The gate's anonymize option preserves KPI rows; the tradeoff is documented and decided at the gate |
+| Removal could lose KPI history for removed candidates | Resolved at the gate in favour of **anonymize** — PII is scrubbed but the row's enum columns + `created_at` stay, so Phase 6 KPIs are unaffected (principle 7) |
+| Anonymization placeholders collide with real data or break NOT NULL columns | Use fixed sentinel placeholders for the NOT NULL PII (`first_name`/`last_name`); nullable PII (`email`/`phone`/`notes`/`team_proposal`/`documents_path`) is set to NULL |
 | The new trigger surprises the Phase 3 form's existing free `talent_pool` selection | The consent-capture UI lands with the trigger so the recruiter can record consent first; the form surfaces the server action's error clearly |
 | Auto-destruction under unclear legal periods | Default is flag-for-review; the job never destroys on its own |
 | Due-date misbuckets at the UTC/midnight boundary | Compare `::date` in Europe/Berlin, consistent with Phase 5/6 |
@@ -230,3 +239,15 @@ Each issue references this spec path in its body.
   (principle 6) and diverges deliberately from the Phase 2 spec's anticipated
   service-role client. One genuinely-open decision — the removal action
   (hard-delete vs. anonymize) — deferred to the spec-acceptance gate.
+- 2026-06-12: Review gate — split the retention migration into 7a (table/RLS/
+  function, safe without `pg_cron`) + 7b (`cron.schedule`, `pg_extension`-guarded
+  no-op); justified the omitted `INSERT`-on-consent trigger (unique FK + trigger (a)
+  close it) and recorded the consent-before-status ordering; documented the
+  SECURITY DEFINER RLS bypass as intentional/audited; reframed the removal decision
+  around KPI continuity (principle 7); recorded the daily cadence; specified the
+  mark-reviewed/extended/removed queue resolutions.
+- 2026-06-12: Spec-acceptance gate (AskUserQuestion) — removal action resolved to
+  **anonymize** (scrub PII, retain the row's enum columns + `created_at` so Phase 6
+  KPIs stay accurate — principle 7; GDPR-sound personal-data erasure, prior-art §4).
+  Human prerequisite confirmed: the user enables the `pg_cron` extension before the
+  retention issues are implemented. Spec accepted and flipped READY.
