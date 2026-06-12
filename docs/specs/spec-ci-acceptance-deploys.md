@@ -1,6 +1,6 @@
 # Spec: CI & acceptance deploys (Phase 8)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-12
 
 Deterministic machine gates that do not depend on an attended session: a GitHub
@@ -24,8 +24,10 @@ section to match.
 - [ ] `docs/workflow.md`'s Gates section reflects reality: the per-PR machine gate
       is the CI workflow (Verify + Build) plus the in-session agent review; the
       milestone QA gate consumes the `qa/milestone-<n>` Vercel preview.
-- [ ] The autonomous loops still merge without a human PR review; the only added
-      merge dependency is the gate-decided branch-protection posture (below).
+- [ ] `main` branch protection requires the green `ci` check (and only `ci`, not
+      the Vercel deploy) with no GitHub-native review, so the autonomous loops still
+      squash-merge after the in-session agent review + green CI — a red CI hard-blocks
+      the merge.
 - [ ] No application code or schema changes; the diff is `.github/workflows/*`,
       `docs/workflow.md`, and (per the gate) branch-protection configuration.
 
@@ -55,18 +57,22 @@ section to match.
   closing issue as open). On completion, push `qa/milestone-<n>` at the current
   `main` SHA, tolerating "already exists" (`git push ... || true`) so a redundant run
   is a harmless no-op. Uses the default `GITHUB_TOKEN` — no PAT.
-- **Branch protection (per the gate decision)** — if enforcement is chosen,
-  configure `main` branch protection via `gh api` to **require the `ci` status
-  check** green before merge, while **not** requiring a human PR review (so the
-  autonomous loops still squash-merge once CI is green). Only the `ci` check is
-  required — explicitly **not** the Vercel deploy check (which is red until the
-  app is deployable, Phase 1 #7, and would otherwise block docs PRs).
-- **Workflow-contract update** — edit `docs/workflow.md` so it matches reality:
-  the per-PR machine gate is the `ci` GitHub Actions check (Verify + Build), not a
-  local-only `npm run verify`; and the milestone QA gate bullet (today
-  "QA-gate default check: `UI check`") names the `qa/milestone-<n>` Vercel preview
-  as the surface the human checks. Touch Commands only if a command name changes
-  (it does not).
+- **Branch protection (enforce — gate-decided)** — configure `main` branch
+  protection via `gh api` to **require the `ci` status check** green before merge,
+  while **not** requiring a GitHub-native review (so the autonomous loops still
+  squash-merge once CI is green; the in-session agent review remains the
+  process-level review gate). Only the `ci` check is required — explicitly **not**
+  the Vercel deploy check (red until the app is deployable, Phase 1 #7, and would
+  otherwise block docs PRs). Applied only after the `ci` check has reported once
+  (see Human prerequisites), so this step depends on the CI workflow landing first.
+- **Workflow-contract update** — edit `docs/workflow.md` so it matches reality. The
+  per-PR gate becomes two layers: the `ci` GitHub Actions check (Verify + Build),
+  **required via branch protection** (replacing the local-only `npm run verify`),
+  **plus** the in-session agent review (`VERDICT: APPROVE`) as the process-level
+  review gate — both must pass before the autonomous squash-merge. The milestone QA
+  gate bullet (today "QA-gate default check: `UI check`") names the
+  `qa/milestone-<n>` Vercel preview as the surface the human checks. Touch Commands
+  only if a command name changes (it does not).
 
 ### Out of scope
 
@@ -110,23 +116,24 @@ Reference `docs/constitution.md` and `docs/workflow.md` rather than restating th
 
 ## Human prerequisites
 
-- [ ] **Build variables** — `NEXT_PUBLIC_SUPABASE_URL` and
-      `NEXT_PUBLIC_SUPABASE_ANON_KEY` available to CI as GitHub Actions **repository
-      variables** so `npm run build` runs. They are public values (already in the
-      client bundle); the loop can set them from `.env.local` via `gh variable set`
-      if repo-admin token access is available — otherwise the user adds them under
-      Settings → Secrets and variables → Actions → Variables.
+- [x] **Build variables** — gate decision: the **loop sets**
+      `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as GitHub Actions
+      **repository variables** from `.env.local` via `gh variable set` (they are
+      public values, already in the client bundle — not secrets). No human action,
+      provided the loop's token has repo-admin; if it does not, that step parks
+      `blocked:human` and the user adds them under Settings → Secrets and variables →
+      Actions → Variables.
 - [ ] **Vercel branch deploys** — confirm Vercel deploys pushed `qa/*` branches
       (Vercel's default deploys all branches; confirm it was not restricted to PRs
       only).
-- [ ] **Branch protection (only if the gate chooses enforcement)** — either confirm
-      the loop's GitHub token has admin to set branch protection via `gh api`, or the
-      user applies the rule (require `ci`, no required review). If neither, the
-      branch-protection issue is parked `blocked:human`. **Apply the rule only after
-      the first `ci` run has reported the `ci` check on a PR against `main`** — GitHub
-      silently treats a required check it has never seen as "waiting", so enabling it
-      before the check name is registered leaves the gate inactive (hence the
-      branch-protection issue depends on the CI workflow being merged and run once).
+- [ ] **Branch protection (enforce — gate-decided)** — the loop sets the rule via
+      `gh api` (require `ci`, no required GitHub review) if its token has repo-admin;
+      otherwise the user applies it, or the branch-protection issue parks
+      `blocked:human`. **Apply the rule only after the first `ci` run has reported the
+      `ci` check on a PR against `main`** — GitHub silently treats a required check it
+      has never seen as "waiting", so enabling it before the check name is registered
+      leaves the gate inactive (hence the branch-protection issue depends on the CI
+      workflow being merged and run once).
 
 ## Prior decisions
 
@@ -138,7 +145,8 @@ Reference `docs/constitution.md` and `docs/workflow.md` rather than restating th
 | Acceptance branch = `qa/milestone-<n>`, pushed by an `issues: closed` workflow when the milestone hits `open_issues == 0`, using `GITHUB_TOKEN` | Vercel already deploys pushed branches, so a branch push is the whole mechanism; the automation has the milestone number (phase numbers diverge from milestone numbers); no PAT needed | 2026-06-12 |
 | Two separate workflow files (`ci.yml`, `acceptance-deploy.yml`) | Distinct triggers and permissions; clearer than one multiplexed workflow | 2026-06-12 |
 | Update `docs/workflow.md` Gates section in this phase | The roadmap intent requires the contract to match the new machine gates | 2026-06-12 |
-| OPEN — branch-protection posture: **enforce** (require the `ci` check to merge, no required human review) vs. **advisory** (CI reports but does not block; the loop's judgment + agent review remain the merge decision) | Neither precedent nor constraint settles the policy; enforcing makes CI a real gate but means the loops wait for green CI on every PR (incl. docs). Recommendation: enforce, requiring only `ci` (never the Vercel deploy). Resolved at the spec-acceptance gate | — |
+| Branch protection = **enforce**, requiring the green `ci` check (and only `ci` — never the Vercel deploy) before merge, with **no** GitHub-native required review | Decided at the spec-acceptance gate. The loops wait for green CI on every PR (incl. docs) — a red CI hard-blocks the merge — which is the point of a deterministic gate | 2026-06-12 |
+| The mandatory **in-session agent review** stays as the process-level review gate (no merge without `VERDICT: APPROVE`); it is **not** promoted to a GitHub-native required review | Gate decision: the user wants both CI and review enforced, but keeping the agent review as the process gate (rather than a required GitHub approval) preserves the autonomous-merge model — the loops still squash-merge after agent-APPROVE + green CI, with no human approval needed per PR | 2026-06-12 |
 
 ## Tracking
 
@@ -200,3 +208,10 @@ Each issue references this spec path in its body.
   explicit (`push: { branches: [main] }`); recorded that branch protection must be
   applied only after the `ci` check has reported once; widened the workflow.md
   update to the QA-gate bullet.
+- 2026-06-12: Spec-acceptance gate (AskUserQuestion) — branch protection resolved to
+  **enforce, requiring only the `ci` check** (a red CI hard-blocks merges). The user
+  wanted both CI and review enforced; clarified to keep the mandatory **in-session
+  agent review** as the process-level review gate (not a GitHub-native required
+  review), preserving the autonomous-merge model. Build variables: the loop sets the
+  two public `NEXT_PUBLIC_*` values as Actions variables from `.env.local`. Spec
+  accepted and flipped READY.
