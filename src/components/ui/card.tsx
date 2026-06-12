@@ -1,7 +1,11 @@
 import * as React from "react";
 
+import type { LucideIcon } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 
+// Styleguide card surface: rounded-xl with a hairline border and a soft shadow
+// (replacing the prior ring). All colours are design tokens (principle 8).
 function Card({
   className,
   size = "default",
@@ -12,11 +16,47 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-foreground/10 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card flex flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card py-4 text-sm text-card-foreground shadow-[var(--shadow-sm)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className,
       )}
       {...props}
     />
+  );
+}
+
+// Styleguide section header: a tinted icon tile + a Montserrat title and a muted
+// subtitle, used by form sections and detail panels.
+function CardSectionHeader({
+  className,
+  icon: Icon,
+  title,
+  subtitle,
+  ...props
+}: Omit<React.ComponentProps<"div">, "title"> & {
+  icon?: LucideIcon;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
+}) {
+  return (
+    <div
+      data-slot="card-section-header"
+      className={cn("flex items-center gap-3", className)}
+      {...props}
+    >
+      {Icon && (
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-status-active-bg)] text-primary">
+          <Icon className="size-[17px]" />
+        </span>
+      )}
+      <div className="flex min-w-0 flex-col gap-px">
+        <span className="font-[family-name:var(--font-heading)] text-[17px] leading-snug font-bold text-foreground">
+          {title}
+        </span>
+        {subtitle && (
+          <span className="text-[13px] text-text-muted">{subtitle}</span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -100,4 +140,5 @@ export {
   CardAction,
   CardDescription,
   CardContent,
+  CardSectionHeader,
 };
