@@ -19,6 +19,13 @@ tokens as talentacquisition's own and updates the constitution accordingly.
       the constitution's styling row and the tech-debt "vendored from `mag`" entry
       are updated to say the tokens are now project-owned, and `docs/architecture.md`'s
       `components/ui` note follows.
+- [ ] The shadcn **base-token aliases** the existing primitives and the shipped
+      Phase-6 `chart.tsx` already reference but `globals.css` does not define —
+      `--background`, `--foreground`, `--muted` / `--muted-foreground`, `--border`,
+      `--input`, `--ring`, `--primary-foreground`, `--secondary-foreground`,
+      `--accent` — plus the `--chart-*` palette, are defined as aliases onto the
+      styleguide tokens, so shadcn-generated components (the chart tooltip,
+      buttons, badges) render in the brand palette instead of shadcn defaults.
 - [ ] A component library on shadcn/ui (base-nova, `@base-ui/react`) + CVA +
       tailwind-merge + lucide provides every primitive the screens use, each
       visually matched to the styleguide and built mobile-responsive:
@@ -29,10 +36,12 @@ tokens as talentacquisition's own and updates the constitution accordingly.
       breadcrumb, tabs/segmented control, dropdown-menu, stepper, progress bar,
       distribution bar, stat-card shell, alert/callout).
 - [ ] Existing primitives (`components/ui/{badge,button,card,input,label,table,textarea}.tsx`)
-      and the candidate badges (`components/candidates/{stage,status,priority}-badge.tsx`)
-      are aligned to the styleguide in place — not duplicated — and the badge
-      sets are completed (status gains `Talentpool` / `Zurueckgezogen`; priority
-      gains the `Nicht triagiert` neutral).
+      and the candidate badges (`components/candidates/{stage,status,priority,follow-up}-badge.tsx`)
+      are aligned to the styleguide **in place** — not duplicated. The badge value
+      sets already match the enums (status renders all six values incl.
+      `talent_pool` / `withdrawn`; priority is `a/b/c/d`), so the work is **colour
+      alignment** plus rendering the **null-priority "Nicht triagiert"** neutral
+      (untriaged is the nullable `priority` column, not an enum value).
 - [ ] A dev-only `/styleguide` gallery route renders the full library so it can
       be diffed against the Paper styleguide; it is excluded from the product
       navigation and exposes no candidate data.
@@ -49,7 +58,14 @@ tokens as talentacquisition's own and updates the constitution accordingly.
   styleguide. The colour tokens already match the styleguide (`--color-primary
   #12464b`, `--color-cta #ea580c`, …); this phase confirms them, fills any gap
   the styleguide needs (the six type-scale steps as usable utilities/tokens, the
-  semantic badge colours), and **re-labels their provenance**: update the
+  semantic badge colours), and **defines the shadcn base-token aliases**
+  (`--background`, `--foreground`, `--muted` / `--muted-foreground`, `--border`,
+  `--input`, `--ring`, `--primary-foreground`, `--secondary-foreground`,
+  `--accent`) plus the `--chart-*` palette — which the existing `button` / `badge`
+  primitives and the shipped Phase-6 `chart.tsx` already reference but
+  `globals.css` does not define — mapped onto the styleguide tokens, so the chart
+  tooltip and any shadcn-generated component render in the brand palette rather
+  than shadcn's defaults. It then **re-labels provenance**: update the
   constitution's *Styling* row and the *Tech debt* table (drop "vendored/copied
   from `mag`" → "talentacquisition's own, derived from the Paper styleguide") and
   the matching `docs/architecture.md` component-map line.
@@ -57,9 +73,11 @@ tokens as talentacquisition's own and updates the constitution accordingly.
   - **Actions** — `button` (align the existing 8 CVA variants to the styleguide's
     Primary / CTA / Secondary / Outline / Ghost / Destructive / Link / Disabled,
     with leading-icon support); `icon-button` size for kebab / bell.
-  - **Badges** — align `ui/badge` + the three candidate badge wrappers to the
-    styleguide; complete the value sets (status, priority A/B/C/D + untriaged,
-    pipeline-stage); a small reusable count badge (nav / "Alle anzeigen" markers).
+  - **Badges** — align `ui/badge` + the candidate badge wrappers (`stage`,
+    `status`, `priority`, `follow-up`) to the styleguide **colours**; the value
+    sets already match the enums, so the only additive case is the
+    **null-priority "Nicht triagiert"** neutral; add a small reusable count badge
+    (nav / "Alle anzeigen" markers).
   - **Form controls** — `input` (+ leading-icon slot for email / search),
     `textarea`, `label` (+ required asterisk), and the new `select`, `checkbox`,
     `switch`, a styled `date` input (calendar affordance), and a `priority`
@@ -76,8 +94,10 @@ tokens as talentacquisition's own and updates the constitution accordingly.
     `alert`/callout (login info box, inline "Feedback ausstehend" note).
 - **Gallery route** — a dev-only `/styleguide` page mirroring the Paper
   Styleguide artboard (colours, type scale, every component in its variants /
-  states), used as the visual-diff surface and the QA-gate evidence. No product
-  data, not linked from the app nav.
+  states), used as the visual-diff surface and the QA-gate evidence. It lives
+  outside the `(app)` route group (e.g. `app/styleguide/`), reads no Supabase /
+  candidate data, is not linked from the app nav, and — pending the open decision
+  below — may be guarded to non-production.
 - **Responsiveness** — components that adapt between the desktop and mobile
   screens (table → stacked card row, segmented controls, touch target sizes) ship
   with both behaviours; the breakpoints follow the Paper screens (≈ 390 mobile,
@@ -102,6 +122,13 @@ tokens as talentacquisition's own and updates the constitution accordingly.
 - **Data access, server actions, migrations, KPI views** — no `src/lib/db`,
   `supabase/migrations`, or server-action work; this is a presentational layer.
 - **Dark mode** — the styleguide is light-mode only; no dark theme.
+- **German label-copy reconciliation** — the styleguide words a few labels
+  differently from the current `src/lib/candidates/labels.ts` (e.g. `active`
+  shown as *In Bearbeitung* vs. *Aktiv*, `rejected` as *Abgesagt* vs.
+  *Abgelehnt*). Those labels are shared copy rendered by the existing list / form
+  pages, so reconciling them is page-facing and belongs to **Phase 10**; Phase 9
+  matches badge **colour and shape**, not copy. The gallery shows the current
+  labels.
 
 ## Constraints
 
@@ -143,7 +170,9 @@ Reference `docs/constitution.md` rather than restating it.
 | Decision | Rationale | Date |
 |---|---|---|
 | Phase 9 = component library + token confirmation + constitution re-label; **not** a token re-vendor | `globals.css` already matches the styleguide (the styleguide was built from it); re-doing tokens would be churn and risks regressing Phases 1/3/4 | 2026-06-12 |
-| Align existing primitives + candidate badges in place; complete the badge value sets | "Extend, do not duplicate"; the screens use exactly the styleguide's status/priority/stage sets, which are wider than today's | 2026-06-12 |
+| Align existing primitives + candidate badges **in place**; the badge value sets already match the enums, so the work is colour alignment + the null-priority "Nicht triagiert" rendering | "Extend, do not duplicate"; status already renders all six values and priority is `a/b/c/d` with untriaged = the nullable column (verified in `status-badge.tsx` / `priority-badge.tsx`) | 2026-06-12 |
+| Define the shadcn base-token aliases + `--chart-*` palette mapped onto the styleguide tokens | The shipped Phase-6 `chart.tsx` and the `button` / `badge` primitives reference `--background` / `--foreground` / `--muted` / … and `--chart-*`, none defined in `globals.css`; the token-foundation phase is the right owner | 2026-06-12 |
+| German label-copy reconciliation (e.g. `active` → "In Bearbeitung", `rejected` → "Abgesagt") deferred to Phase 10 | Those labels are shared copy rendered by existing pages; changing them is page-facing, outside this presentational phase | 2026-06-12 |
 | Responsive (desktop + mobile) is in scope | The hand-off is final and includes 5 mobile screens; deferring responsive would force a rebuild in Phase 10 | 2026-06-12 |
 | Boundaries: chart → Phase 6 (#43); app-shell/nav composition → Phase 10; retention actions → Phase 7 | Those milestones own the data/behaviour; Phase 9 supplies only the presentational primitives they reuse | 2026-06-12 |
 | Pull exact values from Paper via `get_jsx`/`get_computed_styles`, not screenshots | Paper MCP export guidance; screenshots are for visual QA only | 2026-06-12 |
@@ -168,10 +197,14 @@ Each issue references this spec path in its body.
       the `/styleguide` gallery, and visually matches the corresponding Paper
       styleguide group (colours, type, spacing, states) — checked at the human
       QA gate against the Paper artboard.
-- [ ] The status badge set covers `In Bearbeitung`, `Zurückgestellt`,
-      `Eingestellt`, `Abgesagt`, `Talentpool`, `Zurückgezogen`; priority covers
-      A/B/C/D + `Nicht triagiert`; pipeline-stage covers all 7 stages — each in
-      the styleguide's colours.
+- [ ] Every badge renders in the styleguide's colours: status across all six
+      enum values, priority A/B/C/D **plus the null-priority "Nicht triagiert"**
+      neutral, pipeline-stage across all 7 stages.
+- [ ] `globals.css` defines the shadcn base-token aliases (`--background`,
+      `--foreground`, `--muted` / `--muted-foreground`, `--border`, `--input`,
+      `--ring`, …) and the `--chart-*` palette; the shipped Phase-6 chart and its
+      tooltip, and the `button` / `badge` primitives, render in the brand palette
+      (verified in the gallery), not shadcn defaults.
 - [ ] Form controls render their focus ring (secondary) and the error state with
       helper/error text (e.g. a required Absagegrund), all from tokens.
 - [ ] Components render correctly at mobile (≈ 390) and desktop (≈ 1440) widths —
@@ -200,3 +233,16 @@ Each issue references this spec path in its body.
   component library + token confirmation + constitution re-label, with responsive
   in scope and the chart/nav/retention boundaries assigned to Phases 6/10/7. One
   open decision (ship a dev-only `/styleguide` gallery route) marked for the gate.
+- 2026-06-12: Review gate (in-session agent) — two blocking corrections, both
+  verified against the current `main` (@7030e82, Phases 5–6 partly implemented):
+  (1) the badge value sets already match the enums — `status-badge.tsx` renders
+  all six statuses incl. `talent_pool` / `withdrawn`, and `priority` is `a/b/c/d`
+  with untriaged = the nullable column — so "completing" the sets was wrong;
+  reframed to colour alignment + the null-priority "Nicht triagiert" rendering,
+  with the styleguide's differing label copy (Aktiv → In Bearbeitung, Abgelehnt →
+  Abgesagt) deferred to Phase 10. (2) The shipped Phase-6 `chart.tsx` and the
+  `button` / `badge` primitives reference shadcn base tokens (`--background`,
+  `--foreground`, `--muted` / `--muted-foreground`, `--border`, …) and `--chart-*`
+  that `globals.css` does not define; defining those aliases onto the styleguide
+  tokens was added to the token foundation. Gallery route location clarified
+  (`app/styleguide/`, outside `(app)`).
