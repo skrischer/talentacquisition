@@ -31,6 +31,7 @@ import {
   foreignQualificationRecognitionLabels,
   mobilityLabels,
   nursingQualificationLabels,
+  rejectionReasonLabels,
   teamFeedbackStatusLabels,
 } from "@/lib/candidates/labels";
 import { PIPELINE_STAGES } from "@/lib/candidates/stages";
@@ -39,7 +40,7 @@ import { getByCandidate } from "@/lib/db/consent";
 
 // The seven pipeline steps in the design's short German labels (the styleguide
 // stepper copy), positionally aligned with PIPELINE_STAGES so the candidate's
-// stage maps to its step index.
+// stage_order maps to its step index.
 const STEPPER_LABELS = [
   "Neu",
   "Sichtung",
@@ -107,8 +108,8 @@ function Field({
 // A neutral status pill matching the card-header trailing chip in the design.
 function NeutralPill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-status-neutral-bg px-[11px] py-1 text-[13px] leading-4 font-semibold text-text-secondary">
-      <span className="size-[7px] shrink-0 rounded-full bg-border-hover" />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-status-neutral-bg)] px-[11px] py-1 text-[13px] leading-4 font-semibold text-text-secondary">
+      <span className="size-[7px] shrink-0 rounded-full bg-[var(--color-border-hover)]" />
       {children}
     </span>
   );
@@ -125,7 +126,12 @@ export default async function CandidateDetailPage({
   const consent = await getByCandidate(id);
 
   const today = resolveToday();
-  const currentStep = Math.max(0, PIPELINE_STAGES.indexOf(candidate.stage));
+  // stage_order is the DB-authoritative 1-based pipeline position; convert to
+  // the stepper's 0-based step index.
+  const currentStep = Math.min(
+    PIPELINE_STAGES.length - 1,
+    Math.max(0, candidate.stage_order - 1),
+  );
   const followUpBucket = bucketFor(candidate.follow_up_date, today);
   const retention = retentionCountdown(candidate.deletion_review_date, today);
 
@@ -175,7 +181,10 @@ export default async function CandidateDetailPage({
                 </div>
               </div>
               <div className="border-t border-border" />
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <dl
+                aria-label="Kontaktdaten"
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+              >
                 <Field label="E-Mail">
                   {candidate.email ? (
                     <a
@@ -232,7 +241,10 @@ export default async function CandidateDetailPage({
                 icon={FileText}
                 title="Qualifikation & Klassifizierung"
               />
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <dl
+                aria-label="Qualifikation und Klassifizierung"
+                className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              >
                 <Field label="Qualifikation">
                   {candidate.nursing_qualification
                     ? nursingQualificationLabels[candidate.nursing_qualification]
@@ -264,9 +276,11 @@ export default async function CandidateDetailPage({
                     DASH
                   )}
                 </Field>
-                <Field label="Erstellt">
-                  {formatDate(candidate.created_at.slice(0, 10))}
-                </Field>
+                {candidate.rejection_reason && (
+                  <Field label="Ablehnungsgrund">
+                    {rejectionReasonLabels[candidate.rejection_reason]}
+                  </Field>
+                )}
                 <Field label="Aktualisiert">
                   {formatDate(candidate.updated_at.slice(0, 10))}
                 </Field>
@@ -283,12 +297,9 @@ export default async function CandidateDetailPage({
                   {teamFeedbackStatusLabels[candidate.team_feedback_status]}
                 </NeutralPill>
               </div>
-              <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <dl aria-label="Team-Abstimmung" className="grid grid-cols-1 gap-4">
                 <Field label="Vorgeschlagenes Team">
                   {textValue(candidate.team_proposal)}
-                </Field>
-                <Field label="Team-Feedback">
-                  {teamFeedbackStatusLabels[candidate.team_feedback_status]}
                 </Field>
               </dl>
             </CardContent>
@@ -316,7 +327,7 @@ export default async function CandidateDetailPage({
               <CardSectionHeader
                 icon={Clock}
                 title="Wiedervorlage"
-                className="[&>span:first-child]:bg-destructive-bg [&>span:first-child]:text-destructive"
+                className="[&>span:first-child]:bg-[var(--color-destructive-bg)] [&>span:first-child]:text-destructive"
               />
               <Field label="Nächster Schritt">
                 {textValue(candidate.next_step)}
@@ -345,7 +356,7 @@ export default async function CandidateDetailPage({
               </span>
               {candidate.deletion_review_date ? (
                 <div className="flex items-start gap-3">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-status-active-bg text-secondary">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-status-active-bg)] text-secondary">
                     <Trash2 className="size-[18px]" aria-hidden="true" />
                   </span>
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
