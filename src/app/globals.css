@@ -23,8 +23,10 @@
   --color-bg: #ffffff;
   --color-bg-alt: #f5f5f5;
   --color-bg-muted: #eeeeee;
+  --color-bg-subtle: #fafafa;
   --color-card: #ffffff;
   --color-border: #e6e6e6;
+  --color-border-subtle: #f0f0f0;
   --color-border-hover: #999999;
   --color-text: #1a1a1a;
   --color-text-secondary: #666666;
@@ -146,8 +148,10 @@
   --color-bg: var(--color-bg);
   --color-bg-alt: var(--color-bg-alt);
   --color-bg-muted: var(--color-bg-muted);
+  --color-bg-subtle: var(--color-bg-subtle);
   --color-card: var(--color-card);
   --color-border: var(--color-border);
+  --color-border-subtle: var(--color-border-subtle);
   --color-text: var(--color-text);
   --color-text-secondary: var(--color-text-secondary);
   --color-text-muted: var(--color-text-muted);
