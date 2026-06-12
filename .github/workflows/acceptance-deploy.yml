@@ -1,0 +1,63 @@
+name: acceptance-deploy
+
+# On milestone completion, push a frozen acceptance branch so Vercel's GitHub
+# App deploys a stable preview for the milestone QA gate. No attended step, no
+# PAT — the default GITHUB_TOKEN pushes the branch; Vercel deploys it via its
+# own webhook (a GITHUB_TOKEN push does not re-trigger Actions, which is fine).
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  contents: write
+  issues: read
+
+jobs:
+  push-qa-branch:
+    # Only issues that belong to a milestone can complete one.
+    if: ${{ github.event.issue.milestone != null }}
+    runs-on: ubuntu-latest
+    # Serialise runs for the same milestone so two near-simultaneous closes
+    # cannot race; never cancel an in-flight push.
+    concurrency:
+      group: qa-milestone-${{ github.event.issue.milestone.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+      - name: Push qa/milestone-<n> when the milestone is complete
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MILESTONE: ${{ github.event.issue.milestone.number }}
+        run: |
+          set -euo pipefail
+          branch="qa/milestone-$MILESTONE"
+
+          # Authoritative open-issue count from the milestone object (version-
+          # independent, single call). One retry absorbs GitHub's eventual-
+          # consistency lag between the close webhook and the counter update.
+          open_count() {
+            gh api "repos/$GITHUB_REPOSITORY/milestones/$MILESTONE" --jq '.open_issues'
+          }
+          open="$(open_count)"
+          if [ "$open" -ne 0 ]; then
+            sleep 10
+            open="$(open_count)"
+          fi
+          if [ "$open" -ne 0 ]; then
+            echo "Milestone $MILESTONE still has $open open issue(s) — no qa branch."
+            exit 0
+          fi
+
+          # The frozen preview is pushed exactly once. If the branch already
+          # exists (a redundant run — the per-milestone concurrency group
+          # serialises them), leave it untouched; only a genuine push failure
+          # fails the job.
+          if git ls-remote --exit-code --heads origin "$branch" >/dev/null 2>&1; then
+            echo "$branch already exists — frozen preview already in place."
+            exit 0
+          fi
+          echo "Milestone $MILESTONE complete — pushing $branch."
+          git push origin "HEAD:refs/heads/$branch"
