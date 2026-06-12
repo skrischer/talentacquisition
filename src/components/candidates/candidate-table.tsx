@@ -14,6 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { bucketFor, isSurfacedBucket } from "@/lib/candidates/follow-up";
 import {
   applicationSourceLabels,
   candidatePriorityOptions,
@@ -23,6 +24,7 @@ import {
 } from "@/lib/candidates/labels";
 import type { Candidate } from "@/lib/db/candidates";
 
+import { FollowUpBadge } from "./follow-up-badge";
 import { PriorityBadge } from "./priority-badge";
 import { StageBadge } from "./stage-badge";
 import { StatusBadge } from "./status-badge";
@@ -63,6 +65,35 @@ function formatDate(value: string | null): string {
   if (!value) return "—";
   const [year, month, day] = value.split("-");
   return year && month && day ? `${day}.${month}.${year}` : value;
+}
+
+// The follow-up cell: the formatted date, emphasised and badged when the row is
+// due. Classification comes from the same `bucketFor` the dashboard card uses —
+// one source, no second date parse — and the inline guard narrows the bucket so
+// only surfaced values reach the badge.
+function FollowUpDateCell({
+  followUpDate,
+  today,
+}: {
+  followUpDate: string | null;
+  today: string;
+}) {
+  const bucket = bucketFor(followUpDate, today);
+  const surfaced = isSurfacedBucket(bucket);
+  return (
+    <div className="flex items-center gap-2">
+      <span
+        className={
+          surfaced
+            ? "font-medium text-[var(--color-text)]"
+            : "text-text-secondary"
+        }
+      >
+        {formatDate(followUpDate)}
+      </span>
+      {isSurfacedBucket(bucket) && <FollowUpBadge bucket={bucket} />}
+    </div>
+  );
 }
 
 const controlClass =
@@ -106,12 +137,21 @@ function SortHeader({
   );
 }
 
-export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
+export function CandidateTable({
+  candidates,
+  today,
+}: {
+  candidates: Candidate[];
+  today: string;
+}) {
   const [search, setSearch] = useState("");
   // Filter values are plain strings ("" = all) so the native <select> onChange
   // needs no enum cast; comparing an enum column to the string is sound.
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  // "Nur fällige": keep only rows whose follow-up bucket is surfaced (overdue /
+  // due_today / due_this_week), AND-composed with the filters above.
+  const [onlyDue, setOnlyDue] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -127,7 +167,10 @@ export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
         statusFilter === "" || candidate.status === statusFilter;
       const matchesPriority =
         priorityFilter === "" || candidate.priority === priorityFilter;
-      return matchesName && matchesStatus && matchesPriority;
+      const matchesDue =
+        !onlyDue ||
+        isSurfacedBucket(bucketFor(candidate.follow_up_date, today));
+      return matchesName && matchesStatus && matchesPriority && matchesDue;
     });
 
     if (!sortKey) return filtered;
@@ -141,7 +184,16 @@ export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
       if (right === null) return -1;
       return left.localeCompare(right, "de") * direction;
     });
-  }, [candidates, search, statusFilter, priorityFilter, sortKey, sortDir]);
+  }, [
+    candidates,
+    search,
+    statusFilter,
+    priorityFilter,
+    onlyDue,
+    today,
+    sortKey,
+    sortDir,
+  ]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -156,10 +208,11 @@ export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
     setSearch("");
     setStatusFilter("");
     setPriorityFilter("");
+    setOnlyDue(false);
   }
 
   const isFiltered =
-    search !== "" || statusFilter !== "" || priorityFilter !== "";
+    search !== "" || statusFilter !== "" || priorityFilter !== "" || onlyDue;
 
   return (
     <div className="flex flex-col gap-4">
@@ -198,6 +251,15 @@ export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
             </option>
           ))}
         </select>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-text-secondary">
+          <input
+            type="checkbox"
+            checked={onlyDue}
+            onChange={(event) => setOnlyDue(event.target.checked)}
+            className="size-4 accent-[var(--color-secondary)]"
+          />
+          Nur fällige Wiedervorlagen
+        </label>
         {isFiltered && (
           <button
             type="button"
@@ -309,8 +371,11 @@ export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
                       <span className="text-text-muted">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-text-secondary">
-                    {formatDate(candidate.follow_up_date)}
+                  <TableCell>
+                    <FollowUpDateCell
+                      followUpDate={candidate.follow_up_date}
+                      today={today}
+                    />
                   </TableCell>
                 </TableRow>
               ))
