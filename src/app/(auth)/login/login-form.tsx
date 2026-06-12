@@ -45,23 +45,30 @@ export function LoginForm({ linkError = false }: { linkError?: boolean }) {
       </div>
 
       {status === "sent" ? (
-        <Alert tone="success" role="status">
-          Wenn ein Konto für diese Adresse besteht, ist ein Anmeldelink
-          unterwegs. Bitte prüfen Sie Ihr Postfach.
-        </Alert>
+        // Live region announces the confirmation; Alert keeps its own role.
+        <div role="status">
+          <Alert tone="success">
+            Wenn ein Konto für diese Adresse besteht, ist ein Anmeldelink
+            unterwegs. Bitte prüfen Sie Ihr Postfach.
+          </Alert>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {linkError && (
-            <Alert tone="destructive" role="alert">
-              Der Anmeldelink ist ungültig oder abgelaufen. Bitte fordern Sie
-              einen neuen an.
-            </Alert>
+            <div role="alert">
+              <Alert tone="destructive">
+                Der Anmeldelink ist ungültig oder abgelaufen. Bitte fordern Sie
+                einen neuen an.
+              </Alert>
+            </div>
           )}
           {status === "error" && (
-            <Alert tone="destructive" role="alert">
-              Der Anmeldelink konnte nicht versendet werden. Bitte versuchen Sie
-              es erneut.
-            </Alert>
+            <div role="alert">
+              <Alert tone="destructive">
+                Der Anmeldelink konnte nicht versendet werden. Bitte versuchen
+                Sie es erneut.
+              </Alert>
+            </div>
           )}
           <div className="flex flex-col gap-2">
             <Label htmlFor="email">E-Mail-Adresse</Label>

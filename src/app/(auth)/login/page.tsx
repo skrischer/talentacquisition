@@ -29,6 +29,7 @@ export default async function LoginPage({
       {/* Brand hero — full-bleed teal panel; left column on desktop, top hero on mobile */}
       <section
         data-dark-bg
+        aria-label="Über talentacquisition"
         className="relative flex flex-col overflow-hidden px-6 pt-12 pb-8 text-[var(--color-footer-text)] sm:px-10 lg:flex-[0_0_54%] lg:justify-between lg:px-20 lg:py-16"
       >
         {/* Decorative circles */}
@@ -51,10 +52,12 @@ export default async function LoginPage({
         </div>
 
         <div className="relative mt-10 flex max-w-[560px] flex-col gap-6 lg:mt-0">
-          <h2 className="font-[family-name:var(--font-heading)] text-4xl leading-[1.1] font-extrabold tracking-tight lg:text-display lg:leading-[var(--text-display--line-height)]">
+          {/* Marketing headline — decorative, kept out of the heading outline so
+              the form's "Anmelden" stays the page's single h1. */}
+          <p className="font-[family-name:var(--font-heading)] text-4xl leading-[1.1] font-extrabold tracking-tight lg:text-display lg:leading-[var(--text-display--line-height)]">
             Jede Bewerbung zuverlässig im Blick.
-          </h2>
-          <p className="text-lg text-[var(--color-footer-text)]/85">
+          </p>
+          <p className="text-lg text-[var(--color-footer-text)] opacity-85">
             Zentrale Erfassung, klare Prioritäten und Wiedervorlagen — damit kein
             Kandidat im Posteingang verloren geht.
           </p>
@@ -70,14 +73,17 @@ export default async function LoginPage({
           </ul>
         </div>
 
-        <div className="relative mt-10 flex items-center gap-2 text-sm text-[var(--color-footer-text)]/70 lg:mt-0">
+        <div className="relative mt-10 flex items-center gap-2 text-sm text-[var(--color-footer-text)] opacity-70 lg:mt-0">
           <Lock className="size-4 shrink-0" aria-hidden="true" />
           <span>Interner Zugang · DSGVO-konform · Hosting in der EU</span>
         </div>
       </section>
 
       {/* Sign-in panel — white surface; right column on desktop, overlapping card on mobile */}
-      <section className="flex flex-1 justify-center rounded-t-2xl bg-card px-6 pt-10 pb-12 lg:items-center lg:rounded-none lg:px-16 lg:py-16">
+      <section
+        aria-label="Anmelden"
+        className="flex flex-1 justify-center rounded-t-2xl bg-card px-6 pt-10 pb-12 lg:items-center lg:rounded-none lg:px-16 lg:py-16"
+      >
         <LoginForm linkError={error === "link"} />
       </section>
     </main>
