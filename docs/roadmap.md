@@ -16,6 +16,7 @@
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
 | 6 | Dashboard KPIs | [spec](specs/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
+| 8 | CI & acceptance deploys | — | — |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -46,13 +47,24 @@ milestone `#4`. Follow the linked URL, not the number.
   SQL aggregates, no manual counting.
 - **7 — Talent-pool consent & retention.** Explicit consent record (`accepted` +
   `answered_at`) and a retention job over `deletion_review_date`. Closes the MVP.
+- **8 — CI & acceptance deploys.** Deterministic machine gates outside the
+  attended loops: GitHub Actions running Verify/Build (and tests once they
+  exist) on every PR, plus a milestone-completion automation — when a
+  milestone's last issue closes, push `qa/phase-<n>` from `main` so Vercel
+  deploys a frozen preview for the milestone QA gate. Updates the workflow
+  contract's Gates section accordingly.
 
 ## Current focus
 
-**Roadmap fully planned — all seven phases have a `READY` spec and a milestone.**
-Focus shifts from planning to implementation; `/loopkit:implement` drives the
-unblocked Todo issues, and progress lives in the linked milestones. There is no
-next phase to `/plan` until new phases are added below.
+**Phase 8: CI & acceptance deploys** (next to `/plan` — the last unplanned phase)
+
+Deterministic machine gates that do not depend on an attended session: a GitHub
+Actions workflow running Verify/Build on every PR, and a milestone-completion
+automation that pushes `qa/phase-<n>` from `main` so Vercel deploys a frozen
+preview for the milestone QA gate. Infrastructure-only; needs nothing from the
+feature phases except Vercel being connected (Phase 1), so it should land
+before the first milestone QA gate. All feature phases (1–7) are planned with
+`READY` specs and milestones; implementation runs in parallel.
 
 Most recently planned: **Phase 7 — Talent-pool consent & retention** (the MVP
 closer; spec `READY`, milestone
