@@ -12,7 +12,7 @@
 | `app/(app)/candidates` | Candidate list/table + detail view — the core, replaces the Excel `Bewerber-ATS` sheet |
 | `app/(app)/board` | Kanban pipeline board grouped by stage (atomic-crm pattern) |
 | `app/(app)/dashboard` | KPI cards, replaces the Excel `Dashboard` sheet |
-| `components/ui` | shadcn/ui primitives, vendored from `mag` |
+| `components/ui` | shadcn/ui primitives (base-nova); project-owned, styled to the Paper styleguide (Phase 9) |
 | `components/candidates` | Candidate-specific components: form, table, status/priority badges |
 | `lib/supabase` | Typed Supabase clients (server + browser) |
 | `lib/db` | Typed data-access queries (candidates, KPIs) |
@@ -70,7 +70,7 @@
 - New enum value → migration (alter enum).
 - New KPI → a Postgres view + a dashboard card.
 - New page → `app/(app)/<feature>/`.
-- New shared UI primitive → `components/ui/` (prefer copying from `mag`).
+- New shared UI primitive → `components/ui/` (project-owned, matched to the Paper styleguide).
 
 ## Later (not MVP)
 

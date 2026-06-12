@@ -13,7 +13,7 @@ provisioned.
 | ---- | ------ | --------- |
 | Framework | Next.js (App Router, RSC) + React 19 | Matches `mag`; Vercel-native rendering |
 | Language | TypeScript, `strict: true` | Global rule; type safety, no `any` |
-| Styling | Tailwind v4 + design tokens copied from `mag` `globals.css` | Reuse the client's existing CI verbatim |
+| Styling | Tailwind v4 + project-owned design tokens in `globals.css`, derived from the Paper styleguide | talentacquisition's own design system (Phase 9); shares the client CI but no longer vendored |
 | UI components | shadcn/ui (base-nova, on `@base-ui/react`) + CVA + tailwind-merge + lucide-react | Matches `mag` and the atomic-crm prior art |
 | Forms | react-hook-form + zod | Matches `mag`; runtime validation at the edge |
 | Backend / DB | Supabase (Postgres 17, eu-central-1): DB, Auth, RLS | Project `talentacquisition` already provisioned |
@@ -77,4 +77,4 @@ Each is checkable in review or by a constraint.
 
 | Deviation | Where | Plan |
 | --------- | ----- | ---- |
-| Design tokens are vendored (copied) from `mag` | `globals.css` | Re-sync manually when the client CI changes; no shared package yet |
+| _None._ The `mag` token vendoring was resolved in Phase 9 — `globals.css` tokens are now project-owned, derived from the Paper styleguide. | — | — |
