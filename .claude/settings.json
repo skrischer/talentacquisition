@@ -1,10 +1,10 @@
 {
-  "enabledPlugins": {
-    "loopkit@loopkit": true
-  },
   "permissions": {
-    "defaultMode": "acceptEdits",
-    "allow": ["Bash", "WebFetch", "WebSearch"],
+    "allow": [
+      "Bash",
+      "WebFetch",
+      "WebSearch"
+    ],
     "deny": [
       "Bash(rm -rf *)",
       "Bash(git push --force)",
@@ -15,6 +15,10 @@
       "Bash(git reset --hard *)",
       "Bash(supabase db reset)",
       "Bash(supabase db reset *)"
-    ]
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "enabledPlugins": {
+    "loopkit@loopkit": true
   }
 }
