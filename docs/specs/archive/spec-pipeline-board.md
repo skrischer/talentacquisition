@@ -191,3 +191,28 @@ Each issue references this spec path in its body.
   (1) DnD via `@atlaskit/pragmatic-drag-and-drop` (new dependency approved,
   atomic-crm-aligned); (2) board row-scope = `status` in {`active`, `on_hold`,
   `hired`}. Spec flipped to READY.
+- 2026-06-12: Implemented across #32–#34 (PRs #75–#77). Implementation decisions:
+  - `PIPELINE_STAGES` is taken from the generated `Constants` enum tuple (so the
+    order tracks the Phase 2 enum), with `TERMINAL_STAGES = ['hired']`, both in
+    `src/lib/candidates/stages.ts`. `listForBoard` groups the live-pipeline rows
+    (`status` in active/on_hold/hired) with an exhaustive, compile-checked column
+    seed literal (no cast).
+  - Only the **core** `@atlaskit/pragmatic-drag-and-drop` package was added; the
+    drop indicator is built from the core adapter (closest edge computed from the
+    pointer), with no hitbox/react-drop-indicator companion packages. Drag data
+    is read from the adapter's `Record<string|symbol, unknown>` via typed guards
+    (`isPipelineStage` through `PIPELINE_STAGES.some`) — no enum `as`-casting.
+  - The card became presentational (its name is a `draggable={false}` link) so
+    the client board can wrap it as a draggable; the read-only `board-column.tsx`
+    was folded into the client board.
+  - Move logic is two pure, runtime-tested helpers in `src/lib/board/move.ts`:
+    `resolveMove` (optimistic post-removal insertion) and `planReindex` (the
+    minimal both-column contiguous renumber written by the server action). The
+    `moveCandidate` server action writes **only** `stage` + `stage_order` on the
+    RLS-scoped client (principle 1), non-transactionally (MVP), and revalidates
+    `/board`; React 19 `useOptimistic` provides the optimistic move + rollback.
+- 2026-06-12: Milestone QA gate **accepted** by the recruiting owner
+  ("QA sauber"); milestone #5 closed, spec archived. Live UI checks (7 columns
+  in pipeline order, cross-column + within-column drag persistence, optimistic
+  rollback, board row-scope, stage/status orthogonality, RLS-only writes)
+  confirmed.
