@@ -30,7 +30,7 @@ function initialsFromEmail(email: string | undefined): string {
  *
  * Chrome: a desktop sidebar (≥ md) and a mobile bottom-tab bar (< md) share
  * one nav definition; the Wiedervorlage entry carries the overdue follow-up
- * count, derived server-side from the Phase-5 bucket utility over `list()`.
+ * count, derived server-side from the Phase-5 bucket utility.
  * The header carries the global search that routes to the candidate list.
  */
 export default async function AppLayout({
