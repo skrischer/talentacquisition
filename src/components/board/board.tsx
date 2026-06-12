@@ -200,8 +200,12 @@ export function Board({ columns }: { columns: BoardColumns }) {
         const overCardId =
           type === "card" ? readString(target.data, "cardId") : null;
         if (overCardId === cardId) return;
-        const edge =
-          readString(target.data, "edge") === "top" ? "top" : "bottom";
+        // Edge only applies when landing on a card; a column drop appends, where
+        // resolveMove ignores the edge (overCardId is null).
+        const edge: Edge =
+          type === "card" && readString(target.data, "edge") === "top"
+            ? "top"
+            : "bottom";
 
         const intent: MoveIntent = { cardId, toStage, overCardId, edge };
         const { stageOrder } = resolveMove(columnsRef.current, intent);
