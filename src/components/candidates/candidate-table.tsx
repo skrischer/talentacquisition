@@ -37,10 +37,10 @@ type SortKey =
 
 type SortDir = "asc" | "desc";
 
-// Sorts rows with no value (null priority / follow-up) to the end.
-const SORT_LAST = "￿";
-
-function sortValue(candidate: Candidate, key: SortKey): string {
+// Returns the comparison key for a column, or null when the row has no value
+// for it (priority / follow-up); the comparator keeps nulls last in both
+// directions.
+function sortValue(candidate: Candidate, key: SortKey): string | null {
   switch (key) {
     case "name":
       return `${candidate.last_name} ${candidate.first_name}`.toLowerCase();
@@ -53,9 +53,9 @@ function sortValue(candidate: Candidate, key: SortKey): string {
     case "status":
       return candidateStatusLabels[candidate.status].toLowerCase();
     case "priority":
-      return candidate.priority ?? SORT_LAST;
+      return candidate.priority;
     case "follow_up_date":
-      return candidate.follow_up_date ?? SORT_LAST;
+      return candidate.follow_up_date;
   }
 }
 
@@ -66,7 +66,7 @@ function formatDate(value: string | null): string {
 }
 
 const controlClass =
-  "h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-white px-3 text-sm outline-none transition-colors hover:border-[var(--color-border-hover)] focus-visible:border-[var(--color-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--color-secondary)] focus-visible:outline-offset-2";
+  "h-9 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-card)] px-3 text-sm outline-none transition-colors hover:border-[var(--color-border-hover)] focus-visible:border-[var(--color-secondary)] focus-visible:outline-2 focus-visible:outline-[var(--color-secondary)] focus-visible:outline-offset-2";
 
 function SortHeader({
   label,
@@ -132,11 +132,15 @@ export function CandidateTable({ candidates }: { candidates: Candidate[] }) {
 
     if (!sortKey) return filtered;
     const direction = sortDir === "asc" ? 1 : -1;
-    return [...filtered].sort(
-      (a, b) =>
-        sortValue(a, sortKey).localeCompare(sortValue(b, sortKey), "de") *
-        direction,
-    );
+    return [...filtered].sort((a, b) => {
+      const left = sortValue(a, sortKey);
+      const right = sortValue(b, sortKey);
+      // Rows missing a value sort last regardless of direction.
+      if (left === null && right === null) return 0;
+      if (left === null) return 1;
+      if (right === null) return -1;
+      return left.localeCompare(right, "de") * direction;
+    });
   }, [candidates, search, statusFilter, priorityFilter, sortKey, sortDir]);
 
   function toggleSort(key: SortKey) {
