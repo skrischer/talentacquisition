@@ -155,13 +155,15 @@ const ACTIVE_STATUSES = new Set<Enums<"candidate_status">>([
   "on_hold",
 ]);
 
-export async function getDashboardStats(today: IsoDate): Promise<DashboardStats> {
-  const [perMonth, byPriority, byStatus, followUpRows] = await Promise.all([
-    getApplicationsPerMonth(),
-    getApplicationsByPriority(),
-    getApplicationsByStatus(),
-    listFollowUpDates(),
-  ]);
+// Derives from the already-fetched aggregate set the page reads once, so the
+// stat row adds no view round-trips beyond the single cheap follow_up_date
+// projection it still needs for the bucket tally.
+export async function getDashboardStats(
+  today: IsoDate,
+  kpis: DashboardKpis,
+): Promise<DashboardStats> {
+  const { applicationsPerMonth: perMonth, byPriority, byStatus } = kpis;
+  const followUpRows = await listFollowUpDates();
 
   // Current month is the last (newest) bucket of the rolling window; the prior
   // month is the one before it. The view omits empty months, so compare by the

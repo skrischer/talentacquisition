@@ -31,10 +31,8 @@ function capitalize(value: string): string {
 
 export default async function DashboardPage() {
   const today = resolveToday();
-  const [kpis, stats] = await Promise.all([
-    getDashboardKpis(),
-    getDashboardStats(today),
-  ]);
+  const kpis = await getDashboardKpis();
+  const stats = await getDashboardStats(today, kpis);
 
   const todayLabel = new Intl.DateTimeFormat("de-DE", {
     weekday: "long",
@@ -74,9 +72,11 @@ export default async function DashboardPage() {
           figure={currentMonth.count}
           delta={monthDelta ?? undefined}
           deltaTone={
-            currentMonth.deltaPercent !== null && currentMonth.deltaPercent < 0
-              ? "negative"
-              : "positive"
+            currentMonth.deltaPercent === null || currentMonth.deltaPercent === 0
+              ? "neutral"
+              : currentMonth.deltaPercent < 0
+                ? "negative"
+                : "positive"
           }
         />
         <StatCard
