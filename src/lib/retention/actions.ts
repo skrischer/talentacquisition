@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { anonymizeCandidate, resolveReview } from "@/lib/db/retention";
 
@@ -12,16 +11,14 @@ export async function keepReview(reviewId: string): Promise<void> {
   revalidatePath("/");
 }
 
-// Extend: resolve the open row as 'extended' and hand off to the Phase 3 edit
-// form, where the recruiter sets a future deletion_review_date. If they do not,
-// the next scan simply re-queues the candidate.
-export async function extendReview(
-  reviewId: string,
-  candidateId: string,
-): Promise<void> {
+// Extend: resolve the open row as 'extended'. The client then navigates to the
+// Phase 3 edit form, where the recruiter sets a future deletion_review_date; if
+// they do not, the next scan simply re-queues the candidate. (Navigation lives
+// in the client so a server-action redirect cannot be swallowed by the caller's
+// error handling.)
+export async function extendReview(reviewId: string): Promise<void> {
   await resolveReview(reviewId, "extended");
   revalidatePath("/");
-  redirect(`/candidates/${candidateId}/edit`);
 }
 
 // Anonymize: scrub the candidate PII (gate-decided removal action), then resolve

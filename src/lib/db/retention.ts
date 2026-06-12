@@ -67,10 +67,11 @@ export async function resolveReview(
   if (error) throw error;
 }
 
-// Scrub the candidate's PII and void the consent proof_metadata. Touches no enum
-// column and not created_at, so the Phase 6 KPI aggregates are unchanged; touches
-// neither the consent's accepted flag nor the row's existence, so the #53 trigger
-// never fires (status stays talent_pool where it was).
+// Scrub the candidate's PII (and clear deletion_review_date so the next scan does
+// not re-queue the now-anonymized row) and void the consent's PII (proof_metadata
+// + answered_at). Touches no enum column and not created_at, so the Phase 6 KPI
+// aggregates are unchanged; touches neither the consent's accepted flag nor the
+// row's existence, so the #53 trigger never fires (status stays talent_pool).
 export async function anonymizeCandidate(candidateId: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase
@@ -83,13 +84,14 @@ export async function anonymizeCandidate(candidateId: string): Promise<void> {
       notes: null,
       team_proposal: null,
       documents_path: null,
+      deletion_review_date: null,
     })
     .eq("id", candidateId);
   if (error) throw error;
 
   const { error: consentError } = await supabase
     .from("talent_pool_consent")
-    .update({ proof_metadata: null })
+    .update({ proof_metadata: null, answered_at: null })
     .eq("candidate_id", candidateId);
   if (consentError) throw consentError;
 }

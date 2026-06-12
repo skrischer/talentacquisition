@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export function ReviewRowActions({
   reviewId: string;
   candidateId: string;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,12 @@ export function ReviewRowActions({
         size="sm"
         variant="outline"
         disabled={pending}
-        onClick={() => run(() => extendReview(reviewId, candidateId))}
+        onClick={() =>
+          run(async () => {
+            await extendReview(reviewId);
+            router.push(`/candidates/${candidateId}/edit`);
+          })
+        }
       >
         Verlängern
       </Button>
