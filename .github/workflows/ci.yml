@@ -20,6 +20,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      # The lockfile is authored with npm 11 (the dev/loop toolchain ships it via
+      # Node 24); Node 20 ships npm 10, which rejects npm 11's optional-dep
+      # entries and fails `npm ci`. Pin npm to match the lockfile's author.
+      - run: npm install -g npm@11
       - run: npm ci
       - run: npm run verify
       - run: npm run build
