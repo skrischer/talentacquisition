@@ -33,28 +33,40 @@ section to match.
 
 ### In scope
 
-- **CI workflow** — `.github/workflows/ci.yml`, `on: [pull_request, push to main]`:
-  checkout, setup-node (pinned **Node 20 LTS** — the repo declares no `engines`, and
-  Next.js 15 / React 19 require Node ≥ 18.18), `npm ci`, `npm run verify`,
-  `npm run build`. The build step receives `NEXT_PUBLIC_SUPABASE_URL` and
+- **CI workflow** — `.github/workflows/ci.yml`, triggered on `pull_request`
+  (any base) and `push: { branches: [main] }` — **not** a bare `on: [push]` (which
+  would run on every branch): checkout, setup-node (pinned **Node 20 LTS** — the repo
+  declares no `engines`, and Next.js 15 / React 19 require Node ≥ 18.18), `npm ci`,
+  `npm run verify`, `npm run build`. Pin the marketplace actions
+  (`actions/checkout`, `actions/setup-node`) at least by major tag. The build step
+  receives `NEXT_PUBLIC_SUPABASE_URL` and
   `NEXT_PUBLIC_SUPABASE_ANON_KEY` from GitHub Actions repository variables (they are
   public `NEXT_PUBLIC_*` values, already shipped in the client bundle — not secrets).
   The job is named `ci` so it can be referenced as a required status check.
 - **Acceptance-deploy workflow** — `.github/workflows/acceptance-deploy.yml`,
-  `on: issues: types: [closed]`, `permissions: contents: write`: read the closed
-  issue's milestone; if it has one and `gh api .../milestones/<n>` reports
-  `open_issues == 0`, push a branch `qa/milestone-<n>` at the current `main` SHA
-  (no-op if it already exists). Vercel's GitHub integration deploys the pushed
-  branch as a preview. Uses the default `GITHUB_TOKEN` — no PAT.
+  `on: issues: types: [closed]`, `permissions: contents: write`, with a
+  `concurrency: { group: qa-milestone-${{ ...milestone number... }}, cancel-in-progress: false }`
+  block so two near-simultaneous closes in the same milestone serialise instead of
+  racing. Steps: read the closed issue's milestone; if it has one, determine
+  completion by **listing the milestone's still-open issues**
+  (`gh issue list --milestone <n> --state open`) and treating a count of `0` as
+  complete — with one short retry to absorb GitHub's eventual-consistency lag on the
+  just-closed issue (avoids the false-negative where the milestone still reports the
+  closing issue as open). On completion, push `qa/milestone-<n>` at the current
+  `main` SHA, tolerating "already exists" (`git push ... || true`) so a redundant run
+  is a harmless no-op. Uses the default `GITHUB_TOKEN` — no PAT.
 - **Branch protection (per the gate decision)** — if enforcement is chosen,
   configure `main` branch protection via `gh api` to **require the `ci` status
   check** green before merge, while **not** requiring a human PR review (so the
   autonomous loops still squash-merge once CI is green). Only the `ci` check is
   required — explicitly **not** the Vercel deploy check (which is red until the
   app is deployable, Phase 1 #7, and would otherwise block docs PRs).
-- **Workflow-contract update** — edit `docs/workflow.md`'s Gates (and Commands, if
-  needed) section so the per-PR machine gate is the CI workflow and the milestone
-  QA gate uses the `qa/milestone-<n>` preview.
+- **Workflow-contract update** — edit `docs/workflow.md` so it matches reality:
+  the per-PR machine gate is the `ci` GitHub Actions check (Verify + Build), not a
+  local-only `npm run verify`; and the milestone QA gate bullet (today
+  "QA-gate default check: `UI check`") names the `qa/milestone-<n>` Vercel preview
+  as the surface the human checks. Touch Commands only if a command name changes
+  (it does not).
 
 ### Out of scope
 
@@ -77,6 +89,11 @@ Reference `docs/constitution.md` and `docs/workflow.md` rather than restating th
   Vercel being connected (Phase 1). It does not depend on any feature phase and can
   be implemented immediately; it should land **before the first milestone QA gate**
   so the acceptance-deploy automation is in place when a milestone completes.
+  **No backfill** for already-closed milestones (e.g. milestone #2, already
+  completed and its spec archived): the acceptance-deploy workflow only fires on a
+  future `issues: closed` event, so past completions get no retroactive
+  `qa/milestone-<n>` branch and need none — the automation serves the milestones
+  (#3–#7 and later) that complete after it lands.
 - CI runs exactly the project's defined gates (`docs/workflow.md` Commands +
   constitution Quality gates): `npm run verify` (eslint + `tsc --noEmit`) and
   `npm run build`. No `any`, no new lint rules — CI enforces the existing ones.
@@ -105,7 +122,11 @@ Reference `docs/constitution.md` and `docs/workflow.md` rather than restating th
 - [ ] **Branch protection (only if the gate chooses enforcement)** — either confirm
       the loop's GitHub token has admin to set branch protection via `gh api`, or the
       user applies the rule (require `ci`, no required review). If neither, the
-      branch-protection issue is parked `blocked:human`.
+      branch-protection issue is parked `blocked:human`. **Apply the rule only after
+      the first `ci` run has reported the `ci` check on a PR against `main`** — GitHub
+      silently treats a required check it has never seen as "waiting", so enabling it
+      before the check name is registered leaves the gate inactive (hence the
+      branch-protection issue depends on the CI workflow being merged and run once).
 
 ## Prior decisions
 
@@ -132,8 +153,8 @@ Each issue references this spec path in its body.
 
 ## Verification
 
-- [ ] `npm run lint` / `npm run build` still pass locally (the phase changes no app
-      code).
+- [ ] `npm run verify` / `npm run build` still pass locally (the phase changes no
+      app code).
 - [ ] Opening a PR triggers the `ci` workflow; it runs `npm ci`, `npm run verify`,
       and `npm run build` on Node 20 and reports a green/red status check on the PR.
 - [ ] A PR that introduces a type error or lint error makes `ci` red; a clean PR
@@ -157,8 +178,8 @@ Each issue references this spec path in its body.
 | `npm run build` fails in CI for missing `NEXT_PUBLIC_*` vars | Provide them as Actions variables (human prerequisite / loop-settable from `.env.local`); the env vars are read in factory functions, so absence fails only at build-time prerender — the variables remove the ambiguity |
 | Branch protection accidentally requires the red Vercel check and blocks all merges | Require **only** the `ci` check by name; explicitly exclude the Vercel deploy check (Phase 1 #7 owns deployability) |
 | Branch protection requiring human review would break the autonomous loops | The rule requires status checks only, no required reviewers; documented and verified |
-| The acceptance-deploy workflow pushes `qa/*` on the wrong trigger or loops | Trigger only on `issues: closed`; act only when the milestone's `open_issues == 0`; the push is idempotent (no-op if the branch exists) |
-| A `GITHUB_TOKEN` push does not trigger downstream Actions | Intended — Vercel deploys via its own GitHub integration (webhooks), which sees the push regardless; no Action needs to chain off it |
+| Two near-simultaneous closes in a milestone both push (or the close's eventual-consistency lag misses the trigger) | A `concurrency` group per milestone serialises the runs; completion is detected by listing the milestone's still-open issues (count 0) with one short retry for consistency lag; the push tolerates "already exists" — so the worst case is a harmless redundant no-op, never a missed branch |
+| A `GITHUB_TOKEN` push does not trigger downstream Actions | Intended and not a problem here: the `GITHUB_TOKEN` suppression applies only to downstream **GitHub Actions** workflow triggers, not to third-party GitHub App webhooks. Vercel deploys via its own GitHub App, which receives the push event normally — so no `VERCEL_TOKEN`/custom-deploy-action is needed |
 | Vercel restricted to PR deploys only, so `qa/*` does not deploy | Human prerequisite to confirm Vercel deploys all/branch pushes |
 | Enforcement adds CI latency to every merge, including docs PRs | Accepted as the cost of a deterministic gate; CI on a docs PR still runs fast (verify + build, ~minutes); decided at the gate |
 
@@ -171,3 +192,11 @@ Each issue references this spec path in its body.
   stable Vercel QA preview; `docs/workflow.md` Gates is updated to match. One
   genuinely-open decision — the branch-protection posture (enforce vs. advisory) —
   deferred to the spec-acceptance gate.
+- 2026-06-12: Review gate — added a `concurrency` group + open-issue-listing (with a
+  consistency retry) to the acceptance-deploy workflow to close the double-close
+  race / missed-trigger window; clarified that `GITHUB_TOKEN`-push suppression hits
+  only downstream Actions, not Vercel's GitHub App webhook (no `VERCEL_TOKEN`
+  needed); noted no backfill for already-closed milestone #2; made the CI triggers
+  explicit (`push: { branches: [main] }`); recorded that branch protection must be
+  applied only after the `ci` check has reported once; widened the workflow.md
+  update to the QA-gate bullet.
