@@ -307,3 +307,23 @@ Each issue references this spec path in its body.
 - 2026-06-11: Review gate (AskUserQuestion) — domain enums confirmed; dropped
   `trial_day_result` entirely (the `trial_day` / Hospitation *stage* stays) and
   removed `trainee` + `student` from `nursing_qualification`. 10 enum types.
+- 2026-06-12: Migration workflow (#9). `supabase init` (`project_id`
+  "talentacquisition"); the shared `set_updated_at()` trigger function lives in
+  the foundation migration so the table migrations (#11/#12) only attach
+  triggers. Workflow encoded as npm scripts `db:migrate` and `db:types`
+  (`gen types --local`).
+- 2026-06-12: RLS (#13). Added explicit table `GRANT`s of
+  `select/insert/update/delete` to `authenticated` (and none to `anon`) in
+  addition to the policies. RLS policies filter rows only after the role already
+  holds the table privilege, and a freshly migrated database grants neither
+  role, so without the grant `authenticated` is denied outright. Granting it
+  in-migration keeps the schema self-contained and reproducible on an empty DB
+  rather than depending on the platform's implicit default grants. Policy names
+  table-qualified for operator clarity.
+- 2026-06-12: Verification (#10-#14). All schema acceptance items were verified
+  against a local Postgres 17 (`supabase start` db-only + `migration up`): 10
+  enums with exact value sets, the candidate table, the rejection-reason
+  biconditional CHECK in both directions, the consent unique-FK + `on delete
+  cascade`, RLS (`anon` denied / `authenticated` full CRUD via `set role`), and
+  `gen types --local` producing a compiling `Database`. Applying the migrations
+  to the provisioned remote project is the milestone QA-gate handover.
