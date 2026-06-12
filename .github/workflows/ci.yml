@@ -11,11 +11,19 @@ on:
 permissions:
   contents: read
 
+# Cancel a superseded run when a PR branch is pushed again — the build step is
+# the slow part and there is no value in finishing stale runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 20
