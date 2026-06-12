@@ -91,13 +91,6 @@ export default async function CandidateDetailPage({
           <h1 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-[var(--color-primary)]">
             {candidate.last_name}, {candidate.first_name}
           </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <StageBadge stage={candidate.stage} />
-            <StatusBadge status={candidate.status} />
-            {candidate.priority && (
-              <PriorityBadge priority={candidate.priority} />
-            )}
-          </div>
         </div>
         <Button render={<Link href={`/candidates/${candidate.id}/edit`} />}>
           Bearbeiten
