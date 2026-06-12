@@ -209,3 +209,20 @@ Each issue references this spec path in its body.
   **shadcn `chart` (recharts)**; the stakeholder approved the chart dependency for
   a polished management-presentation dashboard. Human prerequisites confirmed:
   none. Spec accepted and flipped READY.
+- 2026-06-12: Implementation (issues #41–#44). Decisions made while building:
+  - Chart colors via new `--chart-1..5` tokens in `globals.css` that **alias the
+    vendored mag brand palette** (`--color-secondary/primary/secondary-light/cta/
+    cta-decorative`) — the shadcn `--chart-*` convention satisfied with no new hex
+    (principle 8), since the base-nova install ships no `--chart-*` defaults.
+  - KPIs render as **horizontal bar cards with always-visible value labels**
+    (recharts `LabelList`) instead of the shadcn chart tooltip: the vendored token
+    set lacks the standard shadcn base tokens (`--background`, `--foreground`,
+    `--muted-foreground`) the generated tooltip relies on, so the tooltip would be
+    unstyled. Defining that full base-token set is deferred to Phase 9; the
+    value-label approach keeps values legible and fully token-driven now.
+  - The KPI views migration was deployed to the **remote** project via
+    `supabase db push` at the milestone QA gate (authorized by the stakeholder).
+    There is no automated migration deploy yet — that is Phase 8 (CI & acceptance
+    deploys).
+- 2026-06-12: Milestone QA gate **accepted** (UI check). Spec archived; milestone
+  #6 closed.
