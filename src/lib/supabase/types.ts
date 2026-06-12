@@ -124,6 +124,41 @@ export type Database = {
         }
         Relationships: []
       }
+      deletion_review: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          due_date: string
+          id: string
+          resolution: string | null
+          resolved_at: string | null
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          resolution?: string | null
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deletion_review_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidate"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       talent_pool_consent: {
         Row: {
           accepted: boolean
@@ -208,7 +243,7 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      scan_deletion_review: { Args: never; Returns: undefined }
     }
     Enums: {
       application_source:
