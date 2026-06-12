@@ -1,6 +1,6 @@
 # Spec: Design system & component library (Phase 9)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-12
 
 Turn the finalized Paper design hand-off (styleguide + 7 desktop screens + 5
@@ -176,7 +176,7 @@ Reference `docs/constitution.md` rather than restating it.
 | Responsive (desktop + mobile) is in scope | The hand-off is final and includes 5 mobile screens; deferring responsive would force a rebuild in Phase 10 | 2026-06-12 |
 | Boundaries: chart → Phase 6 (#43); app-shell/nav composition → Phase 10; retention actions → Phase 7 | Those milestones own the data/behaviour; Phase 9 supplies only the presentational primitives they reuse | 2026-06-12 |
 | Pull exact values from Paper via `get_jsx`/`get_computed_styles`, not screenshots | Paper MCP export guidance; screenshots are for visual QA only | 2026-06-12 |
-| OPEN — ship a dev-only `/styleguide` gallery route as the visual-diff / QA surface, or verify components only indirectly via Phase 10? | resolved at the spec-acceptance gate | — |
+| Ship a dev-only `/styleguide` gallery route (`app/styleguide/`, outside `(app)`, no candidate data) as the visual-diff / QA surface | Stakeholder decision at the spec-acceptance gate; a verification surface to match components to the styleguide without touching product pages | 2026-06-12 |
 
 ## Tracking
 
@@ -246,3 +246,7 @@ Each issue references this spec path in its body.
   that `globals.css` does not define; defining those aliases onto the styleguide
   tokens was added to the token foundation. Gallery route location clarified
   (`app/styleguide/`, outside `(app)`).
+- 2026-06-12: Spec-acceptance gate (AskUserQuestion) — open decision resolved:
+  **ship the dev-only `/styleguide` gallery route** as the visual-diff / QA
+  surface. Human prerequisites confirmed: none beyond Paper MCP access (in place).
+  Spec accepted and flipped READY.
