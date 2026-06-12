@@ -5,8 +5,14 @@ import { redirect } from "next/navigation";
 
 import { candidateSchema } from "@/lib/candidates/schema";
 import { create, update } from "@/lib/db/candidates";
+import { isTalentPoolConsentError } from "@/lib/db/consent";
 
 export type CandidateActionResult = { error: string };
+
+// The consent-invariant trigger (#53) rejects a talent_pool status without an
+// accepted consent; surface that specific cause instead of the generic message.
+const TALENT_POOL_CONSENT_ERROR =
+  'Der Status "Talentpool" erfordert zuerst eine erteilte Einwilligung (im Kandidaten-Detail erfassen).';
 
 // Server-side re-validation (defense in depth): the same zod schema the form
 // uses runs again here, so the three required fields and the rejection-reason
@@ -25,6 +31,9 @@ export async function createCandidate(
     const candidate = await create(parsed.data);
     id = candidate.id;
   } catch (error) {
+    if (isTalentPoolConsentError(error)) {
+      return { error: TALENT_POOL_CONSENT_ERROR };
+    }
     console.error("createCandidate failed:", error);
     return { error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
   }
@@ -45,6 +54,9 @@ export async function updateCandidate(
   try {
     await update(id, parsed.data);
   } catch (error) {
+    if (isTalentPoolConsentError(error)) {
+      return { error: TALENT_POOL_CONSENT_ERROR };
+    }
     console.error("updateCandidate failed:", error);
     return { error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
   }

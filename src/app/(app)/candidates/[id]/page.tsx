@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ConsentPanel } from "@/components/candidates/consent-panel";
 import { PriorityBadge } from "@/components/candidates/priority-badge";
 import { StageBadge } from "@/components/candidates/stage-badge";
 import { StatusBadge } from "@/components/candidates/status-badge";
@@ -15,6 +16,7 @@ import {
   teamFeedbackStatusLabels,
 } from "@/lib/candidates/labels";
 import { getById } from "@/lib/db/candidates";
+import { getByCandidate } from "@/lib/db/consent";
 
 function formatDate(value: string | null): string {
   if (!value) return "—";
@@ -77,6 +79,7 @@ export default async function CandidateDetailPage({
   const { id } = await params;
   const candidate = await getById(id);
   if (!candidate) notFound();
+  const consent = await getByCandidate(id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -170,6 +173,8 @@ export default async function CandidateDetailPage({
           </span>
         </Field>
       </DetailSection>
+
+      <ConsentPanel candidateId={candidate.id} consent={consent} />
 
       <DetailSection title="Metadaten">
         <Field label="Erstellt">{formatDateTime(candidate.created_at)}</Field>
