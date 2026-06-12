@@ -17,6 +17,8 @@
 | 6 | Dashboard KPIs | [spec](specs/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 | 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
+| 9 | Design system & component library | — | — |
+| 10 | Screen implementation | — | — |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -53,13 +55,31 @@ milestone `#4`. Follow the linked URL, not the number.
   milestone's last issue closes, push `qa/phase-<n>` from `main` so Vercel
   deploys a frozen preview for the milestone QA gate. Updates the workflow
   contract's Gates section accordingly.
+- **9 — Design system & component library.** Input is the Paper design
+  hand-off (styleguide + screens for all pages): adopt the styleguide's design
+  tokens in `globals.css` — superseding the vendored `mag` tokens; the
+  constitution's styling row and tech-debt entry change with it — and build
+  the component library on shadcn/ui: every element the screens need (buttons,
+  badges, form controls, table, cards, navigation, …), each matched against
+  the styleguide. No page changes yet. Prerequisite: the Paper design is
+  finalized.
+- **10 — Screen implementation.** Rebuild every page to match the Paper
+  screens using the Phase-9 library: login, app shell/navigation, candidate
+  list/detail/form, pipeline board, dashboard, and the follow-up surfaces.
+  Depends on Phase 9 and on the functional pages from Phases 1/3–6.
 
 ## Current focus
 
-**Roadmap fully planned — all eight phases have a `READY` spec and a milestone.**
-Focus is implementation; `/loopkit:implement` drives the unblocked Todo issues and
-progress lives in the linked milestones. There is no next phase to `/plan` until
-new phases are added below.
+**Phase 9: Design system & component library** (next to `/plan` — **gated on
+the design hand-off**)
+
+A Paper-designed styleguide plus screens for all pages are in progress (WIP).
+Once the design is finalized, Phase 9 turns the styleguide into design tokens
+and a shadcn/ui-based component library, and Phase 10 implements every page
+after the screens on top of it. `/plan` must not pick Phase 9 before the
+hand-off is final — the spec derives its component inventory from the screens.
+Until then there is nothing to plan; `/loopkit:implement` drives the unblocked
+Todo issues of Phases 3–8.
 
 Most recently planned: **Phase 8 — CI & acceptance deploys** (infrastructure; spec
 `READY`, milestone [#8](https://github.com/skrischer/talentacquisition/milestone/8),
