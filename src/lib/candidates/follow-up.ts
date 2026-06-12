@@ -98,7 +98,7 @@ export function resolveToday(now: Date = new Date()): IsoDate {
 // projected onto the UTC day axis purely as an integer day index — this uses
 // `Date.UTC` only as calendar arithmetic over the parsed components, never as a
 // wall-clock instant, so the result is timezone- and DST-independent.
-function calendarDayDiff(a: IsoDate, b: IsoDate): number {
+export function calendarDayDiff(a: IsoDate, b: IsoDate): number {
   const MS_PER_DAY = 86_400_000;
   return Math.round((utcDayIndex(a) - utcDayIndex(b)) / MS_PER_DAY);
 }

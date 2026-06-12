@@ -150,6 +150,15 @@ function CardStack({
   const [isOver, setIsOver] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
+  // Reveal an arriving card even when the stack is collapsed: if the count grows
+  // (a drop landed here), expand so the card is visible in the optimistic state
+  // and not hidden behind the "+N weitere" slice until the server revalidates.
+  const prevCount = useRef(candidates.length);
+  useEffect(() => {
+    if (candidates.length > prevCount.current) setExpanded(true);
+    prevCount.current = candidates.length;
+  }, [candidates.length]);
+
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -318,7 +327,7 @@ export function Board({
   }, [optimisticColumns]);
   const [error, setError] = useState<string | null>(null);
   const [activeStage, setActiveStage] = useState<PipelineStage>(
-    PIPELINE_STAGES[0],
+    PIPELINE_STAGES[0] ?? "new",
   );
 
   useEffect(() => {

@@ -4,7 +4,11 @@ import { Clock } from "lucide-react";
 
 import { PriorityBadge } from "@/components/candidates/priority-badge";
 import { Badge } from "@/components/ui/badge";
-import { bucketFor, isSurfacedBucket } from "@/lib/candidates/follow-up";
+import {
+  bucketFor,
+  calendarDayDiff,
+  isSurfacedBucket,
+} from "@/lib/candidates/follow-up";
 import {
   applicationSourceLabels,
   nursingQualificationLabels,
@@ -37,18 +41,6 @@ function dueChip(
     return { label, urgent: true };
   }
   return { label: shortWeekday(followUpDate), urgent: false };
-}
-
-// Whole-day difference between two ISO calendar dates, mirroring the Phase-5
-// follow-up arithmetic (UTC day index only as a calendar integer).
-function calendarDayDiff(a: string, b: string): number {
-  const MS_PER_DAY = 86_400_000;
-  return Math.round((utcDayIndex(a) - utcDayIndex(b)) / MS_PER_DAY);
-}
-
-function utcDayIndex(iso: string): number {
-  const [year, month, day] = iso.split("-").map(Number);
-  return Date.UTC(year, month - 1, day);
 }
 
 const WEEKDAYS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"] as const;
