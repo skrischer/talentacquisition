@@ -43,6 +43,25 @@
   --chart-4: var(--color-cta);
   --chart-5: var(--color-cta-decorative);
 
+  /* Semantic status palette — derived from the Paper styleguide for the status,
+     pipeline-stage and priority badges (and reused by Phase-9 alerts). The
+     brand tokens above cover most accents; these fill the gaps the styleguide
+     needs (success/warning, the tinted badge backgrounds, the neutral stage
+     dots). Components reference these as tokens — no hardcoded hex (principle 8). */
+  --color-success: #15803d;
+  --color-success-bg: #e7f6ec;
+  --color-warning: #b45309;
+  --color-warning-bg: #fdf0e1;
+  --color-destructive-bg: #fdeaea;
+  --color-status-active-bg: #e6f2f1;
+  --color-status-talentpool-bg: #e0f5f3;
+  --color-status-talentpool-fg: #00736e;
+  --color-status-neutral-bg: #f0f0f0;
+  --color-stage-new-dot: #9ca3af;
+  --color-stage-screening-dot: #5b9aa0;
+  --color-stage-hired-dot: #4ade80;
+  --color-border-dashed: #cccccc;
+
   /* Spacing (8pt Grid) */
   --space-1: 4px;
   --space-2: 8px;
