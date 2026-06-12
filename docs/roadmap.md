@@ -14,7 +14,7 @@
 | 3 | Candidate management | [spec](specs/archive/spec-candidate-management.md) | [#3](https://github.com/skrischer/talentacquisition/milestone/3) |
 | 4 | Pipeline board | [spec](specs/archive/spec-pipeline-board.md) | [#5](https://github.com/skrischer/talentacquisition/milestone/5) |
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
-| 6 | Dashboard KPIs | [spec](specs/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
+| 6 | Dashboard KPIs | [spec](specs/archive/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
 | 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 | 9 | Design system & component library | — | — |
