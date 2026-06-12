@@ -1,6 +1,6 @@
 # Spec: Dashboard KPIs (Phase 6)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-12
 
 Additive Postgres KPI views over the Phase 2 `candidate` spine plus token-styled
@@ -62,11 +62,14 @@ client round-trips (constitution principle 7).
   views through the RLS-scoped server client (the Phase 1 client + the Phase 3
   `lib/db` convention), returning typed label/value rows. No client-side
   aggregation, no per-bucket query.
-- **KPI card components** — presentational, token-styled cards under
-  `components/dashboard/` with German labels from the Phase 3 enum label maps
-  (`src/lib/candidates/…`, issue #18) and a zero/empty state; the per-month card
-  renders the 12-month series per the chosen visualization approach (see the OPEN
-  decision).
+- **KPI card components** — token-styled cards under `components/dashboard/` with
+  German labels from the Phase 3 enum label maps (`src/lib/candidates/…`, issue
+  #18) and a zero/empty state. Charts use **shadcn `chart` (recharts)**, approved
+  at the gate: the per-month card renders the rolling 12-month series as a
+  bar/line chart, the categorical breakdowns as charts where clearer, with the
+  numeric values still legible. Chart colors come from design-token CSS variables
+  (the shadcn chart `--chart-*` token convention), never hardcoded hex
+  (principle 8).
 - **Dashboard integration** — compose the KPI cards onto the Phase 1 dashboard
   page alongside the Phase 5 Wiedervorlage card; the page reads the KPI module
   server-side and passes typed props down.
@@ -113,10 +116,11 @@ Reference `docs/constitution.md` rather than restating it.
 - **Timezone** — month bucketing uses `created_at AT TIME ZONE 'Europe/Berlin'`
   (the org timezone, consistent with the Phase 5 follow-up decision) so a
   late-evening intake is not counted in the next UTC month.
-- **No new date/charting dependency** unless the visualization OPEN decision
-  approves one; the stack has no chart library and the constitution prefers native
-  APIs and minimal dependencies. A chart dependency, if approved, is a shadcn
-  `chart` (recharts) install under the loopkit dependency grant.
+- **Charting dependency = shadcn `chart` (recharts)**, approved at the gate and
+  installed under the loopkit dependency grant. It is the only new dependency this
+  phase adds; no date library is added (the month series comes pre-bucketed from
+  the SQL view). Wire recharts via the shadcn `chart` wrapper, not directly, to
+  keep token-driven theming.
 - German UI labels (reuse the Phase 3 enum label maps — no parallel label source);
   English identifiers, SQL, and comments. TypeScript `strict`, no `any`.
 - Reuse the Phase 3 `lib/db` data-access convention rather than introducing a
@@ -124,11 +128,11 @@ Reference `docs/constitution.md` rather than restating it.
 
 ## Human prerequisites
 
-- [ ] none — the KPI views are an additive migration on the already-provisioned
+- [x] none — the KPI views are an additive migration on the already-provisioned
       Supabase project; no new secret, external provisioning, dashboard
-      configuration, or account is required. (If the visualization decision adds a
-      chart dependency, it installs autonomously under the loopkit grant — still no
-      human prerequisite.)
+      configuration, or account is required. The approved chart dependency
+      (recharts via shadcn `chart`) installs autonomously under the loopkit grant —
+      no human prerequisite.
 
 ## Prior decisions
 
@@ -140,8 +144,7 @@ Reference `docs/constitution.md` rather than restating it.
 | Month series = rolling last 12 months, bucketed in Europe/Berlin; categorical counts are all-time | Bounded and conventional (all-time month series grows unboundedly); Europe/Berlin matches the Phase 5 timezone decision so months do not flip at UTC midnight | 2026-06-12 |
 | The by-priority view includes a `null`/untriaged bucket | `priority` is nullable until triaged (Phase 2); excluding nulls would make the card under-count vs. the candidate total | 2026-06-12 |
 | German card labels reuse the Phase 3 enum label maps; no second label source | Phase 3 (#18) owns the enum→German maps; one source of truth, principle of reuse | 2026-06-12 |
-| Default DECIDED: dependency-free numeric/table/CSS-bar cards, no chart library. The constitution's dependency-minimization rule sets this default; implementation proceeds dependency-free unless overridden. | Constitution "no new dependency without justification"; over-engineering avoidance for a single screen | 2026-06-12 |
-| OPEN (override only) — whether to add shadcn `chart` (recharts) for the month series, as a visible-early-win lever for the management presentation | A new dependency needs explicit human approval (dependency rule); surfaced at the spec-acceptance gate. Without approval, the dependency-free default above stands | — |
+| Visualization = shadcn `chart` (recharts). Stakeholder approved the chart dependency at the spec-acceptance gate. The month series renders as a bar/line chart and the categorical breakdowns as charts where it reads better; numeric summary values stay visible alongside. | A polished dashboard is a visible-early-win lever for the management/partner presentation (vision "Why now"); the dependency is explicitly approved, satisfying the constitution's "no new dependency without justification" | 2026-06-12 |
 
 ## Tracking
 
@@ -202,3 +205,7 @@ Each issue references this spec path in its body.
   Phase 5 timezone decision. One genuinely-open decision (visualization approach:
   dependency-free cards vs. a chart dependency) deferred to the spec-acceptance
   gate.
+- 2026-06-12: Spec-acceptance gate (AskUserQuestion) — visualization resolved to
+  **shadcn `chart` (recharts)**; the stakeholder approved the chart dependency for
+  a polished management-presentation dashboard. Human prerequisites confirmed:
+  none. Spec accepted and flipped READY.
