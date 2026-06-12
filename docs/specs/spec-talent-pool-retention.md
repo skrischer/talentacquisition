@@ -48,7 +48,15 @@ determining retention periods (a vision non-goal).
   `status = 'talent_pool'` and no `talent_pool_consent` row with `accepted = true`
   exists for the candidate, and (b) a trigger on `talent_pool_consent`
   (`BEFORE UPDATE OF accepted / BEFORE DELETE`) that raises when the change would
-  leave a `talent_pool` candidate without accepted consent. Regenerate types.
+  leave a `talent_pool` candidate without accepted consent. **No `INSERT` trigger on
+  `talent_pool_consent` is needed**: a candidate can only reach `talent_pool` via
+  trigger (a), which already requires an `accepted = true` row to exist, and the
+  Phase 2 unique FK forbids a second consent row — so there is no path to insert an
+  unaccepted consent against an already-`talent_pool` candidate. The recruiter
+  workflow therefore records consent **before** setting the status (within a
+  transaction, trigger (a)'s lookup sees only statements that already ran, so the
+  consent insert must precede the status update); the consent-capture UI enforces
+  that ordering. Regenerate types.
 - **Consent capture UI + server action** — a "Talentpool-Einwilligung" panel +
   action on the candidate detail (`app/(app)/candidates/[id]`) to create/update the
   consent row (`state`, `accepted`, `answered_at`, optional proof metadata),
@@ -56,19 +64,38 @@ determining retention periods (a vision non-goal).
   `src/lib/db/consent.ts`). German labels via a `consent_state` label map extending
   the Phase 3 `src/lib/candidates` maps. The recruiter records consent obtained
   out-of-band — there is no candidate-facing flow (vision out-of-scope).
-- **Retention scan (pg_cron + review queue)** — a migration adding: a
-  SECURITY DEFINER SQL function selecting candidates with
-  `deletion_review_date <= (now() AT TIME ZONE 'Europe/Berlin')::date` and
-  upserting them into a `deletion_review` queue table (`candidate_id`, `due_date`,
-  `created_at`, `resolved_at`, `resolution`); a `cron.schedule` daily entry calling
-  it; RLS on the queue (authenticated full, anon none); regenerate types. This is
-  the Odoo `data_recycle` review-queue pattern (prior-art §4, reuse).
+- **Retention scan (pg_cron + review queue)** — split into **two migrations** so a
+  missing extension never leaves a half-applied migration:
+  - **Migration 7a (safe without `pg_cron`)**: the `deletion_review` queue table
+    (`candidate_id`, `due_date`, `created_at`, `resolved_at`, `resolution`) with RLS
+    (authenticated full, anon none); a SECURITY DEFINER SQL function selecting
+    candidates with `deletion_review_date <= (now() AT TIME ZONE 'Europe/Berlin')::date`
+    and upserting the unresolved ones into the queue. The function **intentionally
+    bypasses RLS** (SECURITY DEFINER) because it is an internal write-only job, not
+    a user read; it touches only the non-PII join keys (`candidate_id`,
+    `deletion_review_date`), so the bypass is audited and safe.
+  - **Migration 7b (the schedule)**: the `cron.schedule(...)` daily call, guarded by
+    `DO $$ BEGIN IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron')
+    THEN ... END IF; END $$` so it is a no-op (not a hard failure) if the extension
+    is not yet enabled. Runs cleanly once the human prerequisite (enable `pg_cron`)
+    is delivered.
+
+  This is the Odoo `data_recycle` review-queue pattern (prior-art §4, reuse).
+  Regenerate types after 7a.
 - **Retention review UI + resolve action** — a dashboard "Löschprüfung fällig"
-  card + a review list of unresolved queue rows joined to their candidates, and a
-  per-row resolve server action: extend the review date (links to the Phase 3 edit
-  form), mark reviewed (keep), or **remove** the candidate per the gate decision
-  (hard-delete or anonymize). The manual removal capability is the hard-delete that
-  Phase 3 explicitly deferred to Phase 7.
+  card + a review list of unresolved queue rows (`resolved_at IS NULL`) joined to
+  their candidates, and a per-row resolve server action with three outcomes:
+  - **extend the review date** — links to the Phase 3 edit form; once the date is
+    in the future the next scan no longer re-queues it, and the open queue row is
+    marked `resolved_at = now()`, `resolution = 'extended'`.
+  - **mark reviewed / keep** — sets `resolved_at = now()`, `resolution = 'keep'` on
+    the queue row; the row is **retained for audit** (soft-resolution), it just
+    leaves the unresolved list.
+  - **remove** the candidate per the gate decision (hard-delete or anonymize) —
+    sets `resolution = 'removed'`. This manual removal is the hard-delete that
+    Phase 3 explicitly deferred to Phase 7.
+
+  All resolutions are server actions through the RLS-scoped client.
 
 ### Out of scope
 
@@ -131,12 +158,13 @@ Reference `docs/constitution.md` rather than restating it.
 |---|---|---|
 | Consent invariant enforced by DB triggers, both directions (candidate status→talent_pool needs accepted consent; consent cannot be un-accepted/deleted while talent_pool) | Principle 4 + the principle-1 DB-enforcement precedent; cross-table, so a trigger not a `CHECK`. Both directions are needed for the invariant to hold at all times | 2026-06-12 |
 | Retention mechanism = pg_cron in-database SECURITY DEFINER function, daily, over `deletion_review_date` | Principle 5 (scheduled, not ad hoc) + prior-art §4 (Odoo `data_recycle` pg_cron over the date column); in-DB so no service-role client is shipped (principle 6) | 2026-06-12 |
+| Scan cadence = daily | `deletion_review_date` is a `date` (not a timestamp), so sub-daily precision is meaningless; daily is sufficient and avoids needless DB load | 2026-06-12 |
 | The retention job only flags due candidates into a `deletion_review` queue; it performs no destructive action itself | Vision parks legal periods; destructive auto-action under legal uncertainty is inappropriate for the MVP | 2026-06-12 |
 | `deletion_review_date` stays recruiter-set; no auto-derived retention period | Vision non-goal: "does not legally determine GDPR retention periods" | 2026-06-12 |
 | Consent recorded by the recruiter out-of-band; no candidate-facing flow | Vision non-goals: no candidate login, no automated candidate email | 2026-06-12 |
-| Diverge from the Phase 2 spec's anticipated service-role retention client — use in-DB pg_cron instead | Ships no service-role key (principle 6), keeps retention logic in SQL next to the data; the Phase 2 spec deferred the mechanism to this phase | 2026-06-12 |
+| Diverge from the Phase 2 spec's anticipated service-role retention client — use in-DB pg_cron instead | Ships no service-role key (principle 6), keeps retention logic in SQL next to the data; the Phase 2 spec deferred the mechanism to this phase. The Phase 7 implementation reconciles the now-superseded "service-role (retention job) bypasses RLS" wording in `spec-data-model.md` (its RLS + Risks sections) so the archived design stays accurate | 2026-06-12 |
 | Surfacing = a dashboard "Löschprüfung" card + a review list | Mirrors the Phase 5 Wiedervorlage / Phase 6 KPI dashboard-card pattern (reuse) | 2026-06-12 |
-| OPEN — removal action when a recruiter resolves a due candidate: **hard-delete** the row vs. **anonymize** (scrub PII, keep the row so Phase 6 KPIs stay accurate) | Neither precedent nor constraint settles it; it trades GDPR-removal simplicity against KPI continuity. Recommendation: hard-delete for the MVP. Resolved at the spec-acceptance gate | — |
+| OPEN — removal action when a recruiter resolves a due candidate: **hard-delete** the row vs. **anonymize** (scrub the PII fields — name/email/phone/notes/team_proposal — keep the row with its enum columns + `created_at`) | The deciding criterion is **KPI continuity (principle 7)**: Phase 6's aggregate views count `candidate` rows, so a hard-delete permanently shrinks the historical KPIs (applications per month, by source, …) for removed candidates, whereas anonymize (prior-art §4 frappe blueprint) keeps the row's non-PII columns so the KPIs stay accurate. Hard-delete is the simpler, strongest-erasure posture; anonymize is the principle-7-preserving option. Resolved at the spec-acceptance gate | — |
 
 ## Tracking
 
@@ -153,9 +181,12 @@ Each issue references this spec path in its body.
 
 - [ ] `npm run lint` passes.
 - [ ] `npm run build` passes (no type errors, no `any`) with the regenerated types.
-- [ ] Applying the migration on the Phase 2/3 schema creates the consent triggers,
-      the retention function, the `cron.schedule` entry, the `deletion_review`
-      queue table, and its RLS policies without error.
+- [ ] Migration 7a applies on the Phase 2/3 schema **without `pg_cron` enabled** —
+      it creates the consent triggers, the `deletion_review` queue table + RLS, and
+      the SECURITY DEFINER retention function with no error.
+- [ ] Migration 7b is a clean no-op when `pg_cron` is absent (the `pg_extension`
+      guard) and, once `pg_cron` is enabled, registers the daily `cron.schedule`
+      entry; neither path leaves a half-applied migration.
 - [ ] Setting a candidate to `status = 'talent_pool'` without an accepted consent
       row is rejected by the trigger (from the form, the server action, and raw
       SQL); after recording an accepted consent the same change succeeds.
