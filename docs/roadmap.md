@@ -19,7 +19,7 @@
 | 8 | CI & acceptance deploys | [spec](specs/archive/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 | 9 | Design system & component library | [spec](specs/archive/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
 | 10 | Screen implementation | [spec](specs/archive/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
-| 11 | Anmeldung mit Zugangsdaten | — | — |
+| 11 | Anmeldung mit Zugangsdaten | [spec](specs/spec-password-auth.md) | [#11](https://github.com/skrischer/talentacquisition/milestone/11) |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -96,7 +96,7 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Next for `/plan`: Phase 11 — Anmeldung mit Zugangsdaten.** The original MVP
+**In implementation: Phase 11 — Anmeldung mit Zugangsdaten.** The original MVP
 (Phases 1–10) is implemented, accepted at each milestone QA gate, and archived —
 the Excel-replacing tool is in place: auth + app shell, the candidate data model,
 candidate management (list/detail/form), the pipeline board, follow-ups
@@ -104,17 +104,19 @@ candidate management (list/detail/form), the pipeline board, follow-ups
 acceptance-deploy gates, the design system, and the final screen implementation
 on the Phase-9 library.
 
-The first post-MVP phase is now sequenced: **Phase 11 — Anmeldung mit
-Zugangsdaten** is the one unplanned phase, so `/plan` with no argument picks it up
-next. It switches authentication from magic-link to email + password (see the
-phase intent for the full scope). Its Paper screens are already reworked — login
-(desktop + mobile) plus the new "Passwort vergessen" and "Neues Passwort setzen"
-screens (desktop + mobile) — so the spec can reference the final screens directly
-via Paper MCP.
+Phase 11 is now **planned** (spec `READY`, milestone
+[#11](https://github.com/skrischer/talentacquisition/milestone/11), issues
+#133–#136 on the board) and is the work `/loopkit:implement` drives: email +
+password login, self-service reset, and an in-app `/account` change-password
+page, against the reworked Paper auth screens (login + Passwort vergessen + Neues
+Passwort setzen + Konto, desktop + mobile). One human prerequisite is delivered
+late: the Supabase "Reset password" email template — needed only to QA the reset
+flow, not to build it.
 
-Further post-MVP scope is not yet sequenced — re-run `/loopkit:plan` to add a
-phase when the scope is decided (e.g. team-lead / partner access, candidate
-handover, or the parked items in `docs/vision.md` Non-goals).
+Nothing is left for `/plan` — the roadmap is fully planned through Phase 11.
+Further post-MVP scope is not yet sequenced; re-run `/loopkit:plan` to add a phase
+when the scope is decided (e.g. team-lead / partner access, candidate handover, or
+the parked items in `docs/vision.md` Non-goals).
 
 ## North star
 
