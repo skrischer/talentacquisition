@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { passwordSchema } from "@/lib/auth/schema";
 import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = { error: string | null };
@@ -55,6 +56,37 @@ export async function requestPasswordReset(
   await supabase.auth.resetPasswordForEmail(email, { redirectTo });
 
   return { submitted: true };
+}
+
+export type UpdatePasswordResult = { error: string | null };
+
+/**
+ * Sets the signed-in user's password via `updateUser` (Phase 11). Used by the
+ * recovery set-new-password page and the in-app /account change. Requires an
+ * active session (the recovery session, or a normal sign-in). The minimum
+ * length is re-validated server-side (defense in depth) on top of the client
+ * zod rule. Returns a result instead of redirecting so each caller can decide
+ * where to go next.
+ */
+export async function updatePassword(
+  password: string,
+): Promise<UpdatePasswordResult> {
+  const parsed = passwordSchema.safeParse(password);
+  if (!parsed.success) {
+    return { error: "Bitte ein gültiges Passwort eingeben." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data });
+
+  if (error) {
+    return {
+      error:
+        "Das Passwort konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    };
+  }
+
+  return { error: null };
 }
 
 /**
