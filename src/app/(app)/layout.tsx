@@ -69,15 +69,20 @@ export default async function AppLayout({
           <SidebarNav overdueCount={overdueCount} />
         </div>
         <div className="flex items-center gap-3 border-t border-[var(--color-border)] px-4 py-4">
-          <Avatar initials={initials} size="default" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-[var(--color-text)]">
-              {user?.email ?? "Angemeldet"}
-            </p>
-            <p className="truncate text-xs text-[var(--color-text-secondary)]">
-              Zentrale Verwaltung
-            </p>
-          </div>
+          <Link
+            href="/account"
+            className="-mx-1 flex min-w-0 flex-1 items-center gap-3 rounded-[var(--radius-md)] px-1 py-1 transition-colors hover:bg-[var(--color-bg-alt)]"
+          >
+            <Avatar initials={initials} size="default" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-[var(--color-text)]">
+                {user?.email ?? "Angemeldet"}
+              </p>
+              <p className="truncate text-xs text-[var(--color-text-secondary)]">
+                Zentrale Verwaltung
+              </p>
+            </div>
+          </Link>
           <form action={signOut}>
             <Button
               type="submit"
@@ -105,6 +110,15 @@ export default async function AppLayout({
                 <HeaderSearch />
               </Suspense>
             </div>
+            {/* Account entry on mobile — the desktop equivalent is the sidebar
+                user chip. */}
+            <Link
+              href="/account"
+              aria-label="Konto"
+              className="shrink-0 rounded-full outline-none transition-opacity hover:opacity-80 focus-visible:opacity-80 md:hidden"
+            >
+              <Avatar initials={initials} size="sm" />
+            </Link>
           </div>
         </header>
         <main
