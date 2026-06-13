@@ -23,3 +23,18 @@ export const newPasswordSchema = z
   });
 
 export type NewPasswordValues = z.infer<typeof newPasswordSchema>;
+
+// In-app change at /account: the current password (re-checked server-side) plus
+// the new password and its confirmation.
+export const accountPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Bitte das aktuelle Passwort eingeben."),
+    password: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Die Passwörter stimmen nicht überein.",
+    path: ["confirmPassword"],
+  });
+
+export type AccountPasswordValues = z.infer<typeof accountPasswordSchema>;

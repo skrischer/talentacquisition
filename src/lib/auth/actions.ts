@@ -90,6 +90,50 @@ export async function updatePassword(
 }
 
 /**
+ * Changes the signed-in user's password from the in-app /account page (Phase
+ * 11). Unlike the recovery flow, this requires the current password: Supabase's
+ * `updateUser` does not re-check it, so we re-authenticate with
+ * `signInWithPassword` first and reject a wrong current password. The new
+ * minimum is re-validated server-side (defense in depth).
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<UpdatePasswordResult> {
+  const parsed = passwordSchema.safeParse(newPassword);
+  if (!parsed.success) {
+    return { error: "Bitte ein gültiges neues Passwort eingeben." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) {
+    return { error: "Die Sitzung ist abgelaufen. Bitte erneut anmelden." };
+  }
+
+  // Re-authenticate to confirm the current password before changing it.
+  const { error: reauthError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (reauthError) {
+    return { error: "Das aktuelle Passwort ist nicht korrekt." };
+  }
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data });
+  if (error) {
+    return {
+      error:
+        "Das Passwort konnte nicht gespeichert werden. Bitte versuche es erneut.",
+    };
+  }
+
+  return { error: null };
+}
+
+/**
  * Ends the current session and returns to the login page. Invoked from the app
  * shell header (Phase 1, #6).
  */
