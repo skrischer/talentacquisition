@@ -89,9 +89,11 @@ export function ResetPasswordForm() {
 
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="confirmPassword">Passwort bestätigen</Label>
+          {/* No eye toggle here: the single toggle reveals only the field it
+              sits on (matches Paper); the confirmation stays masked. */}
           <Input
             id="confirmPassword"
-            type={showPassword ? "text" : "password"}
+            type="password"
             icon={Lock}
             autoComplete="new-password"
             aria-invalid={Boolean(errors.confirmPassword)}
