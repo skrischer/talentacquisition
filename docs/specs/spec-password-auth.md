@@ -27,17 +27,34 @@ What is true when this work is done?
 
 ### In scope
 
-- **Login:** email + password via `signInWithPassword`; remove the magic-link
-  send from the UI; a "Passwort vergessen?" link; copy updates.
-- **Forgot password:** a public route that calls `resetPasswordForEmail` with a
-  redirect to the set-new-password page; a neutral success message.
-- **Set new password (recovery):** a page reached after `/auth/confirm` verifies
-  a `recovery` token; sets the password via `updateUser`; the Supabase recovery
-  email template's redirect targets it.
+- **Login:** email + password via `signInWithPassword`, run from a server action
+  (matching `lib/auth/actions.ts`, keeping the password out of client control
+  flow); remove the magic-link send from the UI; a "Passwort vergessen?" link;
+  copy updates; `autoComplete="current-password"` on the field. A failed sign-in
+  shows a single generic German error (no account enumeration).
+- **Forgot password:** a new **public** route `/forgot-password` that calls
+  `resetPasswordForEmail` with `redirectTo` pointing at the set-new-password
+  page; a neutral success message regardless of whether the address exists.
+- **Set new password (recovery):** `/reset-password`, reached after
+  `/auth/confirm` verifies a `recovery` token and redirects there with the
+  now-active session. The page sets the password via `updateUser({ password })`
+  and proceeds into the app. Reachability contract:
+  - `/auth/confirm` already accepts `type=recovery`; on success it redirects to
+    the same-origin `next` (`/reset-password`), establishing the session.
+  - `/reset-password` is an **authenticated** route — without a session
+    middleware redirects to `/login`. An invalid/expired link never reaches it:
+    `/auth/confirm` already redirects failures to `/login?error=link` (reuse it).
+  - A signed-in user opening `/reset-password` directly simply changes their
+    password (same effect as `/account`) — acceptable, not a separate state.
 - **Change password (in-app):** an authenticated `/account` page that updates
-  the password via `updateUser`, linked from the app shell.
-- **Middleware:** the forgot/reset routes follow the existing public/auth rules;
-  `/auth/confirm` continues to handle `recovery`.
+  the password via `updateUser`, linked from the app shell (the sidebar user
+  chip / mobile app-bar avatar); `autoComplete="new-password"`.
+- **Middleware:** add `/forgot-password` to `PUBLIC_PATHS`; `/reset-password`
+  and `/account` stay protected (a session — including the recovery session — is
+  required). `/auth/confirm` continues to handle `recovery` and keeps its
+  same-origin `next` constraint. Update the now-stale "magic-link" wording in the
+  `auth/confirm/route.ts` JSDoc and the `supabase/middleware.ts` `PUBLIC_PATHS`
+  comment.
 
 ### Out of scope
 
@@ -58,6 +75,10 @@ What is true when this work is done?
 - No DB migration — `auth.users` is Supabase-managed.
 - Reuse the Phase-9 component library and the existing `/auth/confirm`
   token-hash verification (it already accepts `recovery`).
+- The 8-character minimum is enforced client-side via a zod rule on the reset
+  and change-password forms; Supabase's server-side minimum is a dashboard
+  setting (default 6) and independent — raise it there too for server parity
+  (optional, listed under Human prerequisites).
 
 ## Human prerequisites
 
@@ -68,6 +89,8 @@ What is true when this work is done?
       (custom SMTP via Brevo already configured).
 - [ ] At least one account exists with a known email + password for QA
       (admin-set in the Supabase dashboard).
+- [ ] (Optional) Raise the Supabase server-side minimum password length to 8 for
+      parity with the client-side zod rule.
 
 ## Prior decisions
 
@@ -95,9 +118,9 @@ from screenshots.
   (Mobile)".
 - **Set new password:** "Neues Passwort setzen (Desktop)" + "Neues Passwort
   setzen (Mobile)".
-- **Change password (`/account`):** no dedicated artboard — composed from the
-  Phase-9 primitives (card + labeled password inputs + primary button) inside
-  the app shell.
+- **Change password (`/account`):** artboards "Konto (Desktop)" + "Konto
+  (Mobile)" — the app shell (sidebar / bottom-tab, no nav item active) with a
+  "Passwort ändern" card (aktuelles / neues / bestätigen + save).
 
 ## Tracking
 
@@ -126,7 +149,11 @@ Vercel preview.
       works on the next sign-in.
 - [ ] Unauthenticated access to protected routes still redirects to `/login`;
       `/account` and `/reset-password` require a session.
-- [ ] Each auth screen matches its Paper artboard at ≈ 1440 and ≈ 390.
+- [ ] Each auth screen matches its Paper artboard at ≈ 1440 and ≈ 390 (login,
+      forgot, set-new-password, and `/account`).
+- [ ] The password fields carry the correct `autoComplete` hints
+      (`current-password` / `new-password`); no magic-link wording remains in the
+      `/auth/confirm` or middleware comments.
 
 ## Risks and mitigations
 
