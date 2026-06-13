@@ -80,6 +80,17 @@ A PR closes an issue (`Closes #N`); the issue references its spec path. The
 spec never lists steps; the issues never restate the design. The spec's
 `Outcome` list is done-criteria, not a progress mirror.
 
+## Design source
+
+- The UI design source of truth is the Paper file **talentacquisition**:
+  https://app.paper.design/file/01KTY1HN0R547CC6T3XAZHJ2H7/1-0
+- Every user-facing screen has a desktop and, where relevant, a mobile artboard
+  there. Implementation extracts exact values via Paper MCP
+  (`get_jsx` / `get_computed_styles`) — never from screenshots.
+- A spec that touches the UI records the artboard(s) it implements in a
+  `Design reference` section (Paper file + artboard names). This is enforced by
+  the design-reference gate below.
+
 ## Gates
 
 - **Per PR — machine gates, no human stop:** two layers, both required before
@@ -99,6 +110,14 @@ spec never lists steps; the issues never restate the design. The spec's
   - Planning: the spec-acceptance gate — genuinely-open decisions
     (AskUserQuestion, never guess) + human-prerequisites handover, then
     `READY` + merge.
+  - Planning, design-reference gate (UI specs): a spec that **touches the UI**
+    — creates or changes any user-facing screen, page, or component — cannot be
+    flipped to `READY` until its `Design reference` section links the Paper file
+    plus the specific artboard(s) it implements (confirm those artboards exist
+    via Paper MCP). If the Paper design does not exist yet, treat it as a human
+    prerequisite: ask for it at the gate, or park the phase (`blocked:human`,
+    comment what is needed) and plan the next phase instead — never mark a
+    UI-touching spec `READY` against a missing Paper reference.
   - Implementation: the milestone QA gate — when the milestone's last issue
     closes, `.github/workflows/acceptance-deploy.yml` pushes a frozen
     `qa/milestone-<n>` branch from `main` that Vercel deploys as the stable
