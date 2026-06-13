@@ -19,6 +19,7 @@
 | 8 | CI & acceptance deploys | [spec](specs/archive/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 | 9 | Design system & component library | [spec](specs/archive/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
 | 10 | Screen implementation | [spec](specs/archive/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
+| 11 | Anmeldung mit Zugangsdaten | — | — |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -77,23 +78,41 @@ milestone `#4`. Follow the linked URL, not the number.
   existing views (active A-candidates, month-over-month delta, rejection rate
   without trend). Depends on Phase 9 and on the functional pages from
   Phases 1/3–6.
+- **11 — Anmeldung mit Zugangsdaten.** Replace the magic-link / OTP sign-in with
+  email + password (`signInWithPassword`) — the customer wants real accounts
+  with credentials, not a per-login inbox round-trip. Scope: the login screen
+  reworked to email + password with a "Passwort vergessen?" link (magic-link
+  removed from the UI); self-service password reset via Supabase recovery email
+  (`resetPasswordForEmail`) landing on a set-new-password page that reuses the
+  existing `/auth/confirm` recovery verification; an in-app change-password page
+  under `/account` (`updateUser`). Provisioning stays admin-side — the central
+  administration creates accounts with an initial password in the Supabase
+  dashboard; no public signup, no in-app user management. No migration — the
+  `auth.users` store is Supabase-managed. The Paper hand-off is updated: login
+  (desktop + mobile) reworked and new "Passwort vergessen" + "Neues Passwort
+  setzen" screens (desktop + mobile); the `/account` form reuses the Phase-9
+  primitives inside the app shell. Depends on Phase 1 (auth foundation) and
+  Phase 10 (the login screen it modifies).
 
 ## Current focus
 
-**MVP complete** — every phase (1–10) is implemented, accepted at its milestone
-QA gate, and its milestone closed; all specs are archived. There is nothing left
-for `/plan` or `/loopkit:implement` on the original roadmap. Phase 10's screens
-were accepted by visual QA against the `qa/milestone-10` preview; Phase 8's CI
-gates are proven by every subsequent PR having merged through the required `ci`
-check.
-
-The MVP that replaces the Excel is in place: auth + app shell, the candidate data
-model, candidate management (list/detail/form), the pipeline board, follow-ups
+**Next for `/plan`: Phase 11 — Anmeldung mit Zugangsdaten.** The original MVP
+(Phases 1–10) is implemented, accepted at each milestone QA gate, and archived —
+the Excel-replacing tool is in place: auth + app shell, the candidate data model,
+candidate management (list/detail/form), the pipeline board, follow-ups
 (Wiedervorlage), dashboard KPIs, talent-pool consent & retention, the CI /
 acceptance-deploy gates, the design system, and the final screen implementation
 on the Phase-9 library.
 
-Next work is post-MVP and not yet sequenced here — re-run `/loopkit:plan` to add a
+The first post-MVP phase is now sequenced: **Phase 11 — Anmeldung mit
+Zugangsdaten** is the one unplanned phase, so `/plan` with no argument picks it up
+next. It switches authentication from magic-link to email + password (see the
+phase intent for the full scope). Its Paper screens are already reworked — login
+(desktop + mobile) plus the new "Passwort vergessen" and "Neues Passwort setzen"
+screens (desktop + mobile) — so the spec can reference the final screens directly
+via Paper MCP.
+
+Further post-MVP scope is not yet sequenced — re-run `/loopkit:plan` to add a
 phase when the scope is decided (e.g. team-lead / partner access, candidate
 handover, or the parked items in `docs/vision.md` Non-goals).
 
