@@ -4,10 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./types";
 
 /**
- * Routes reachable without a session: the magic-link login and its token-hash
- * confirmation callback. Every other route requires authentication. Note the
- * `/auth` prefix is matched as a whole subtree, so any route added under
- * `/auth/*` later is intentionally public — do not place protected routes there.
+ * Routes reachable without a session: the email + password login and the
+ * token-hash confirmation callback (password recovery, invite). Every other
+ * route requires authentication. Note the `/auth` prefix is matched as a whole
+ * subtree, so any route added under `/auth/*` later is intentionally public —
+ * do not place protected routes there.
  */
 const PUBLIC_PATHS = ["/login", "/auth"];
 

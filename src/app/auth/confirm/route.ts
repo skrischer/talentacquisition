@@ -19,10 +19,13 @@ function isEmailOtpType(value: string | null): value is EmailOtpType {
 }
 
 /**
- * Magic-link callback: verifies the token-hash OTP from the email link and, on
- * success, redirects to the originally requested page (default: the app shell).
- * A failed or expired link returns to /login with an error flag. `next` is
- * constrained to same-origin relative paths to avoid an open redirect.
+ * Email token-hash callback: verifies the OTP from a Supabase email link
+ * (password recovery, invite) and, on success, redirects to the originally
+ * requested page (default: the app shell) with the session established. The
+ * password-recovery flow lands here via `type=recovery` and continues to
+ * /reset-password. A failed or expired link returns to /login with an error
+ * flag. `next` is constrained to same-origin relative paths to avoid an open
+ * redirect.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
