@@ -16,9 +16,9 @@
 | 5 | Follow-ups (Wiedervorlage) | [spec](specs/archive/spec-follow-ups.md) | [#4](https://github.com/skrischer/talentacquisition/milestone/4) |
 | 6 | Dashboard KPIs | [spec](specs/archive/spec-dashboard-kpis.md) | [#6](https://github.com/skrischer/talentacquisition/milestone/6) |
 | 7 | Talent-pool consent & retention | [spec](specs/archive/spec-talent-pool-retention.md) | [#7](https://github.com/skrischer/talentacquisition/milestone/7) |
-| 8 | CI & acceptance deploys | [spec](specs/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
+| 8 | CI & acceptance deploys | [spec](specs/archive/spec-ci-acceptance-deploys.md) | [#8](https://github.com/skrischer/talentacquisition/milestone/8) |
 | 9 | Design system & component library | [spec](specs/archive/spec-design-system.md) | [#9](https://github.com/skrischer/talentacquisition/milestone/9) |
-| 10 | Screen implementation | [spec](specs/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
+| 10 | Screen implementation | [spec](specs/archive/spec-screen-implementation.md) | [#10](https://github.com/skrischer/talentacquisition/milestone/10) |
 
 A phase gets a Spec link once `/plan` drafts it, and a Milestone link once it is
 `READY`. The milestone (open/closed + issue progress) is where status lives.
@@ -80,37 +80,22 @@ milestone `#4`. Follow the linked URL, not the number.
 
 ## Current focus
 
-**Roadmap fully planned** — every phase (1–10) now has a `READY` spec and a
-milestone; there is nothing left for `/plan`. What remains is **implementation**:
-`/loopkit:implement` drives the open milestones — Phase 7 (talent-pool consent &
-retention, [#7](https://github.com/skrischer/talentacquisition/milestone/7)),
-Phase 8 (CI & acceptance deploys,
-[#8](https://github.com/skrischer/talentacquisition/milestone/8)),
-and Phase 10 (screen implementation,
-[#10](https://github.com/skrischer/talentacquisition/milestone/10)) — following
-the dependency edges. **Phase 9 (design system,
-[#9](https://github.com/skrischer/talentacquisition/milestone/9)) is complete and
-accepted** — its token foundation and component library are now available to
-Phase 10's screens; the dashboard / detail retention cards still depend on
-Phase 7 #56.
+**MVP complete** — every phase (1–10) is implemented, accepted at its milestone
+QA gate, and its milestone closed; all specs are archived. There is nothing left
+for `/plan` or `/loopkit:implement` on the original roadmap. Phase 10's screens
+were accepted by visual QA against the `qa/milestone-10` preview; Phase 8's CI
+gates are proven by every subsequent PR having merged through the required `ci`
+check.
 
-Most recently planned: **Phase 10 — Screen implementation** (spec `READY`,
-milestone [#10](https://github.com/skrischer/talentacquisition/milestone/10),
-steps #101–#108). Every page is rebuilt to the final Paper screens on the Phase-9
-library — app shell / nav (sidebar + mobile bottom-tab + header search), login,
-candidate list / detail / form, board, dashboard, and the dedicated Wiedervorlage
-page — all responsive, with the functional deltas as explicit issues
-(Erledigt / Verschieben, stage / source filters + client pagination, the
-email-or-phone rule, the KPI stat row, label-copy reconciliation). No migration;
-the chart / views stay Phase 6, retention stays Phase 7 (slotted via
-`Depends on #56`).
+The MVP that replaces the Excel is in place: auth + app shell, the candidate data
+model, candidate management (list/detail/form), the pipeline board, follow-ups
+(Wiedervorlage), dashboard KPIs, talent-pool consent & retention, the CI /
+acceptance-deploy gates, the design system, and the final screen implementation
+on the Phase-9 library.
 
-Implementation note: Phases 1–2 milestones have completed (their specs are
-archived); the remaining milestones run in parallel, each phase's first issues
-gated on the schema (Phase 2, done) and the surfaces they extend (Phases 1/3).
-
-Implementation still follows the dependency edges — each phase's first issues wait
-on the schema (Phase 2) and the surfaces they extend (Phases 1/3).
+Next work is post-MVP and not yet sequenced here — re-run `/loopkit:plan` to add a
+phase when the scope is decided (e.g. team-lead / partner access, candidate
+handover, or the parked items in `docs/vision.md` Non-goals).
 
 ## North star
 
