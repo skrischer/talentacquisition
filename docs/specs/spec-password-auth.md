@@ -1,6 +1,6 @@
 # Spec: Anmeldung mit Zugangsdaten (Password authentication)
 
-> Status: DRAFT
+> Status: READY
 > Created: 2026-06-13
 
 Replace the magic-link / OTP sign-in with email + password
@@ -169,3 +169,8 @@ Vercel preview.
 - 2026-06-13: All design decisions were resolved with the user before drafting
   (captured in Prior decisions); no genuinely-open decision remained at the
   spec-acceptance gate.
+- 2026-06-13: Spec accepted at the spec-acceptance gate. Open human prerequisite:
+  the Supabase "Reset password" email template is NOT yet configured — it is
+  needed only to QA the reset flow end-to-end, not to build it. The implement
+  loop parks the reset-flow QA item (`blocked:human`) if the template is still
+  missing at that point.
