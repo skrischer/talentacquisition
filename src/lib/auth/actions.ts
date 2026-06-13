@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
@@ -28,6 +29,32 @@ export async function login(
   }
 
   redirect("/");
+}
+
+export type ForgotPasswordState = { submitted: boolean };
+
+/**
+ * Sends a Supabase password-recovery email (Phase 11). `redirectTo` points at
+ * the token-hash callback with `type=recovery` and `next=/reset-password`, so a
+ * verified link lands on the set-new-password page with an active session. The
+ * action ALWAYS reports success and never surfaces Supabase's result, so the
+ * response cannot reveal whether the address has an account (no enumeration).
+ */
+export async function requestPasswordReset(
+  _prevState: ForgotPasswordState,
+  formData: FormData,
+): Promise<ForgotPasswordState> {
+  const email = String(formData.get("email") ?? "");
+
+  const headerList = await headers();
+  const host = headerList.get("host");
+  const proto = headerList.get("x-forwarded-proto") ?? "http";
+  const redirectTo = `${proto}://${host}/auth/confirm?type=recovery&next=/reset-password`;
+
+  const supabase = await createClient();
+  await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+
+  return { submitted: true };
 }
 
 /**
