@@ -4,13 +4,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "./types";
 
 /**
- * Routes reachable without a session: the email + password login and the
- * token-hash confirmation callback (password recovery, invite). Every other
- * route requires authentication. Note the `/auth` prefix is matched as a whole
- * subtree, so any route added under `/auth/*` later is intentionally public —
- * do not place protected routes there.
+ * Routes reachable without a session: the email + password login, the
+ * password-reset request page, and the token-hash confirmation callback
+ * (password recovery, invite). Every other route requires authentication —
+ * including /reset-password, which the recovery session makes reachable. Note
+ * the `/auth` prefix is matched as a whole subtree, so any route added under
+ * `/auth/*` later is intentionally public — do not place protected routes there.
  */
-const PUBLIC_PATHS = ["/login", "/auth"];
+const PUBLIC_PATHS = ["/login", "/forgot-password", "/auth"];
 
 /**
  * Refreshes the Supabase auth session on every request and guards the app: an
